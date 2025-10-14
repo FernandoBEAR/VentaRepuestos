@@ -37,7 +37,8 @@ public class Application {
 				repuesto.setDescripcion("Descripcion de " +nombre);
 				repuesto.setPrecio(10+Math.random()*400);
 				repuesto.setStock((int)(Math.random()*100));
-				repuesto.setDisponibilidad(Math.random() < 0.5 ? Disponibilidad.DISPONIBLE : Disponibilidad.NO_DISPONIBLE);
+				//Siguiente metodo no necesario ya que se automatizo en la clase
+			//	repuesto.setDisponibilidad(Math.random() < 0.5 ? Disponibilidad.DISPONIBLE : Disponibilidad.NO_DISPONIBLE);
 				repuestoRepository.save(repuesto);
 			});
 		};

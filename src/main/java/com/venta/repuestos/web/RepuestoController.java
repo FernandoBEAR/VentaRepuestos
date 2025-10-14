@@ -38,6 +38,21 @@ public class RepuestoController {
         return repuestoService.actualizarRepuesto(id, repuesto);
     }
 
+    @PutMapping("/{id}/aumentar-stock/{cantidad}")
+    public Repuesto aumentarStock(@PathVariable Long id, @PathVariable int cantidad) { // Recibimos la cantidad como un parámetro en la URL
+
+        Repuesto repuestoActualizado = repuestoService.aumentarStock(id, cantidad);
+        return repuestoActualizado;
+    }
+
+    @PutMapping("/{id}/reducir-stock/{cantidad}")
+    public Repuesto reducirStock(@PathVariable Long id, @PathVariable int cantidad) {
+
+        Repuesto repuestoActualizado = repuestoService.reducirStock(id, cantidad);
+        return repuestoActualizado;
+    }
+
+
     @DeleteMapping("/eliminar/{id}")
     public void eliminarRepuesto(@PathVariable Long id) {
         repuestoService.eliminarRepuesto(id);

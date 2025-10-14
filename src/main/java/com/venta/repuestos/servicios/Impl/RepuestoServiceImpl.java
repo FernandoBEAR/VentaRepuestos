@@ -55,6 +55,46 @@ public class RepuestoServiceImpl implements RepuestoService {
     }
 
     @Override
+    public Repuesto aumentarStock(Long id, int cantidad) {
+        // 1. Buscamos el repuesto por su ID. Si no existe, el método de abajo lanzará una excepción.
+        Repuesto repuesto = obtenerRepuestoPorId(id);
+
+        // 2. Validamos que la cantidad sea positiva.
+        if (cantidad <= 0) {
+            throw new IllegalArgumentException("La cantidad a aumentar debe ser mayor que cero.");
+        }
+
+        // 3. Actualizamos el stock.
+        repuesto.setStock(repuesto.getStock() + cantidad);
+
+        // 4. Guardamos el repuesto actualizado en la base de datos.
+        return repuestoRepository.save(repuesto);
+    }
+
+
+    @Override
+    public Repuesto reducirStock(Long id, int cantidad) {
+        // 1. Buscamos el repuesto.
+        Repuesto repuesto = obtenerRepuestoPorId(id);
+
+        // 2. Validamos que la cantidad sea positiva.
+        if (cantidad <= 0) {
+            throw new IllegalArgumentException("La cantidad a reducir debe ser mayor que cero.");
+        }
+
+        // 3. ✨ Lógica de negocio CRÍTICA: Validamos que haya stock suficiente.
+        if (repuesto.getStock() < cantidad) {
+            throw new IllegalStateException("No hay stock suficiente para el repuesto: " + repuesto.getNombre());
+        }
+
+        // 4. Actualizamos el stock.
+        repuesto.setStock(repuesto.getStock() - cantidad);
+
+        // 5. Guardamos el repuesto actualizado.
+        return repuestoRepository.save(repuesto);
+    }
+
+    @Override
     public void eliminarRepuesto(Long id) {
         repuestoRepository.deleteById(id);
     }
