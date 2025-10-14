@@ -13,8 +13,6 @@ import java.util.Optional;
 @Service
 @Transactional
 public class DetalleVentaServicioImpl implements DetalleVentaServicio {
-
-
     @Autowired
     private DetalleVentaRepository detalleVentaRepository;
 
