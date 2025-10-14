@@ -28,8 +28,6 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 	}
 
-
-
 	//@Bean
 	CommandLineRunner start(RepuestoRepository repuestoRepository){
 		return args -> {

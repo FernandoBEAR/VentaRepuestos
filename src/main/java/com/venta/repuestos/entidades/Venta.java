@@ -19,6 +19,6 @@ public class Venta {
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private List<DetalleVenta> detalles;
 }
