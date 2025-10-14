@@ -1,5 +1,6 @@
 package com.venta.repuestos.web;
 
+import com.venta.repuestos.dtos.RepuestoDTO;
 import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.servicios.RepuestoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,10 @@ public class RepuestoController {
     @GetMapping("/listar")
     public List<Repuesto> listarRepuestos() {
         return repuestoService.obtenerTodosLosRepuestos();
+    }
+    @GetMapping("/listarDTO")
+    public List<RepuestoDTO> listarRepuestosDTO() {
+        return repuestoService.obtenerTodosLosRepuestosDTO();
     }
 
     @GetMapping("/buscar/{nombre}")
