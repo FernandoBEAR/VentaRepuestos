@@ -33,6 +33,11 @@ public class RepuestoController {
         return repuestoService.obtenerRepuestoPorNombre(nombre);
     }
 
+    @GetMapping("/buscar/id/{id}")
+    public RepuestoDTO obtenerRepuestoPorId(@PathVariable Long id) {
+        return repuestoService.obtenerRepuestoDTOPorId(id);
+    }
+
     @PutMapping("/actualizar/{id}")
     public Repuesto actualizarRepuesto(@PathVariable Long id, @RequestBody Repuesto repuesto) {
         return repuestoService.actualizarRepuesto(id, repuesto);

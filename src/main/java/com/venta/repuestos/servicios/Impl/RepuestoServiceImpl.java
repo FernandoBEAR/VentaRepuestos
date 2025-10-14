@@ -2,6 +2,7 @@ package com.venta.repuestos.servicios.Impl;
 
 import com.venta.repuestos.dtos.RepuestoDTO;
 import com.venta.repuestos.entidades.Repuesto;
+import com.venta.repuestos.exceptions.RepuestoNotFoundException;
 import com.venta.repuestos.mappers.RepuestoMapper;
 import com.venta.repuestos.repositorios.RepuestoRepository;
 import com.venta.repuestos.servicios.RepuestoService;
@@ -27,13 +28,23 @@ public class RepuestoServiceImpl implements RepuestoService {
 
 
     @Override
-    public Repuesto obtenerRepuestoPorId(Long id) {
-        return repuestoRepository.findById(id).orElse(null);
+    public Repuesto obtenerRepuestoPorId(Long id) throws RepuestoNotFoundException {
+        return repuestoRepository.findById(id).orElseThrow(()-> new RepuestoNotFoundException("Repuesto no encontrado"));
     }
 
     @Override
-    public Repuesto obtenerRepuestoPorNombre(String nombre) {
-        return repuestoRepository.findByNombre(nombre);
+    public RepuestoDTO obtenerRepuestoDTOPorId(Long id) throws RepuestoNotFoundException {
+        Repuesto repuesto = obtenerRepuestoPorId(id);
+        return repuestoMapper.mapearDeRepuestoADTO(repuesto);
+    }
+
+    @Override
+    public Repuesto obtenerRepuestoPorNombre(String nombre) throws RepuestoNotFoundException {
+        Repuesto repuesto = repuestoRepository.findByNombre(nombre);
+        if (repuesto==null){
+            throw new RepuestoNotFoundException("Repuesto no encontrado");
+        }
+        return repuesto;
     }
 
     @Override
@@ -50,12 +61,13 @@ public class RepuestoServiceImpl implements RepuestoService {
     }
 
     @Override
-    public Repuesto actualizarRepuesto(Long id, Repuesto repuesto) {
-        return repuestoRepository.save(repuesto);
+    public Repuesto actualizarRepuesto(Long id, Repuesto repuesto) throws RepuestoNotFoundException{
+        Repuesto repuestoExistente = obtenerRepuestoPorId(id);
+        return repuestoExistente;
     }
 
     @Override
-    public Repuesto aumentarStock(Long id, int cantidad) {
+    public Repuesto aumentarStock(Long id, int cantidad) throws RepuestoNotFoundException{
         // 1. Buscamos el repuesto por su ID. Si no existe, el método de abajo lanzará una excepción.
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
@@ -73,7 +85,7 @@ public class RepuestoServiceImpl implements RepuestoService {
 
 
     @Override
-    public Repuesto reducirStock(Long id, int cantidad) {
+    public Repuesto reducirStock(Long id, int cantidad) throws RepuestoNotFoundException{
         // 1. Buscamos el repuesto.
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
@@ -95,7 +107,11 @@ public class RepuestoServiceImpl implements RepuestoService {
     }
 
     @Override
-    public void eliminarRepuesto(Long id) {
+    public void eliminarRepuesto(Long id) throws RepuestoNotFoundException {
+        Repuesto repuesto = obtenerRepuestoPorId(id);
+        if (repuesto==null){
+            throw new RepuestoNotFoundException("Repuesto no encontrado");
+        }
         repuestoRepository.deleteById(id);
     }
 }
