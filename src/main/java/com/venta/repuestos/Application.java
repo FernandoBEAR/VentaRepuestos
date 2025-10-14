@@ -1,9 +1,14 @@
 package com.venta.repuestos;
 
+
 import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.enums.Disponibilidad;
 import com.venta.repuestos.enums.Marca;
 import com.venta.repuestos.repositorios.RepuestoRepository;
+
+import com.venta.repuestos.entidades.Cliente;
+import com.venta.repuestos.servicios.ClienteService;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,6 +22,7 @@ public class Application {
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
+
 
 
 	//@Bean
@@ -36,4 +42,18 @@ public class Application {
 			});
 		};
 	}
+
+	//@Bean
+	CommandLineRunner start(ClienteService clienteService){
+		return args -> {
+			Stream.of("Cristian","Carlos","William","Shyntia").forEach(nombre ->{
+				Cliente clien = new Cliente();
+				clien.setNombre(nombre);
+				clien.setEmail(nombre.toLowerCase()+"@latinmail.com");
+				clienteService.save(clien);
+			});
+		};
+	}
+
+
 }
