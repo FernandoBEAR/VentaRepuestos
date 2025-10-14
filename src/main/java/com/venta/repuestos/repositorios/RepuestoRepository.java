@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RepuestoRepository extends JpaRepository<Repuesto, Long> {
-
+    Repuesto findByNombre(String nombre);
 }
