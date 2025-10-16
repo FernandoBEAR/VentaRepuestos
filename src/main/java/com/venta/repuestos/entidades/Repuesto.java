@@ -29,4 +29,15 @@ public class Repuesto {
 
     @Enumerated(EnumType.STRING)
     private Disponibilidad disponibilidad;
+
+    // 👇 Callback metodo para actualizar el estado de disponibilidad antes de guardar o actualizar
+    @PrePersist
+    @PreUpdate
+    public void actualizarEstadoDisponibilidad() {
+        if (this.stock != null && this.stock > 0) {
+            this.disponibilidad = Disponibilidad.DISPONIBLE;
+        } else {
+            this.disponibilidad = Disponibilidad.NO_DISPONIBLE;
+        }
+    }
 }
