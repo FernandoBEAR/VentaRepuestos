@@ -25,7 +25,7 @@ public class VentaMapper {
         return dto;
     }
 
-    private DetalleVentaDTO mapearDeDetalle(DetalleVenta detalle) {
+    public DetalleVentaDTO mapearDeDetalle(DetalleVenta detalle) {
         DetalleVentaDTO dto = new DetalleVentaDTO();
         dto.setId(detalle.getId());
         dto.setNombreRepuesto(detalle.getRepuesto().getNombre());

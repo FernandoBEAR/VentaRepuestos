@@ -1,9 +1,12 @@
 package com.venta.repuestos.servicios.Impl;
 
 import com.venta.repuestos.entidades.DetalleVenta;
+import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.entidades.Venta;
 import com.venta.repuestos.repositorios.DetalleVentaRepository;
 import com.venta.repuestos.repositorios.VentaRepository;
+import com.venta.repuestos.servicios.ClienteService;
+import com.venta.repuestos.servicios.RepuestoService;
 import com.venta.repuestos.servicios.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,12 +23,22 @@ public class VentaServicioImpl implements VentaService {
     private VentaRepository ventaRepository;
     @Autowired
     private DetalleVentaRepository detalleVentaRepository;
+    @Autowired
+    private RepuestoService repuestoService;
+
+    @Autowired
+    private ClienteService clienteService;
 
 
     @Override
     public Venta registrarVenta(Venta venta) {
         if (venta.getDetalles() != null) {
             venta.getDetalles().forEach(detalle -> detalle.setVenta(venta));
+            venta.getDetalles().forEach(detalleVenta ->
+                    repuestoService.reducirStock(detalleVenta.getRepuesto().getId(),detalleVenta.getCantidad()));
+
+            venta.getDetalles().forEach(
+                    producto -> producto.setRepuesto(repuestoService.obtenerRepuestoPorId(producto.getRepuesto().getId())));
         }
 
         double total = venta.getDetalles()
@@ -34,6 +47,9 @@ public class VentaServicioImpl implements VentaService {
                 .sum();
         venta.setTotal(total);
 
+
+
+        venta.setCliente(clienteService.findById(venta.getCliente().getId()));
         return ventaRepository.save(venta);
     }
 

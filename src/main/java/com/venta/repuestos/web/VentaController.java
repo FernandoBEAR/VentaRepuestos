@@ -1,6 +1,7 @@
 package com.venta.repuestos.web;
 
 
+import com.venta.repuestos.dtos.DetalleVentaDTO;
 import com.venta.repuestos.dtos.VentaDTO;
 import com.venta.repuestos.entidades.DetalleVenta;
 import com.venta.repuestos.entidades.Venta;
@@ -89,10 +90,12 @@ public class VentaController {
     }
 
     @GetMapping("/{id}/detalles")
-    public ResponseEntity<List<DetalleVenta>> obtenerDetallesPorVenta(@PathVariable Long id) {
+    public ResponseEntity<List<DetalleVentaDTO>>  obtenerDetallesPorVenta(@PathVariable Long id) {
         Venta venta = ventaService.obtenerVentaPorId(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró la venta con ID " + id));
-        return ResponseEntity.ok(venta.getDetalles());
+        return ResponseEntity.ok(venta.getDetalles().stream()
+                .map(ventaMapper::mapearDeDetalle)
+                .collect(Collectors.toList()));
     }
 
 }

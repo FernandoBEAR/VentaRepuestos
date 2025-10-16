@@ -27,10 +27,8 @@ public class ClienteController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Cliente> getById(@PathVariable Long id) {
-        return clienteService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    public Cliente getById(@PathVariable Long id) {
+        return clienteService.findById(id);
     }
 
     @PostMapping
