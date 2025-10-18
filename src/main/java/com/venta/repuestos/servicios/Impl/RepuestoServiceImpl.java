@@ -63,6 +63,7 @@ public class RepuestoServiceImpl implements RepuestoService {
     @Override
     public Repuesto actualizarRepuesto(Long id, Repuesto repuesto) throws RepuestoNotFoundException{
         Repuesto repuestoExistente = obtenerRepuestoPorId(id);
+        repuestoExistente = repuestoRepository.save(repuesto);
         return repuestoExistente;
     }
 
