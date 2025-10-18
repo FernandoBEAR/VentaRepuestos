@@ -57,7 +57,6 @@ public class RepuestoController {
         return repuestoActualizado;
     }
 
-
     @DeleteMapping("/eliminar/{id}")
     public void eliminarRepuesto(@PathVariable Long id) {
         repuestoService.eliminarRepuesto(id);

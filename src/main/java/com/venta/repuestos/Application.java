@@ -28,7 +28,19 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 	}
 
-	//@Bean
+    //@Bean
+    CommandLineRunner start(ClienteService clienteService){
+        return args -> {
+            Stream.of("Cristian","Carlos","William","Shyntia").forEach(nombre ->{
+                Cliente clien = new Cliente();
+                clien.setNombre(nombre);
+                clien.setEmail(nombre.toLowerCase()+"@latinmail.com");
+                clienteService.save(clien);
+            });
+        };
+    }
+
+    //@Bean
 	CommandLineRunner start(RepuestoRepository repuestoRepository){
 		return args -> {
 			Stream.of("Martillo", "Destornillador", "Llave Inglesa", "Taladro").forEach(nombre ->{
@@ -43,18 +55,6 @@ public class Application {
 				//Siguiente metodo no necesario ya que se automatizo en la clase
 			//	repuesto.setDisponibilidad(Math.random() < 0.5 ? Disponibilidad.DISPONIBLE : Disponibilidad.NO_DISPONIBLE);
 				repuestoRepository.save(repuesto);
-			});
-		};
-	}
-
-	//@Bean
-	CommandLineRunner start(ClienteService clienteService){
-		return args -> {
-			Stream.of("Cristian","Carlos","William","Shyntia").forEach(nombre ->{
-				Cliente clien = new Cliente();
-				clien.setNombre(nombre);
-				clien.setEmail(nombre.toLowerCase()+"@latinmail.com");
-				clienteService.save(clien);
 			});
 		};
 	}

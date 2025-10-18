@@ -32,24 +32,27 @@ public class VentaServicioImpl implements VentaService {
 
     @Override
     public Venta registrarVenta(Venta venta) {
-        if (venta.getDetalles() != null) {
-            venta.getDetalles().forEach(detalle -> detalle.setVenta(venta));
-            venta.getDetalles().forEach(detalleVenta ->
-                    repuestoService.reducirStock(detalleVenta.getRepuesto().getId(),detalleVenta.getCantidad()));
-
-            venta.getDetalles().forEach(
-                    producto -> producto.setRepuesto(repuestoService.obtenerRepuestoPorId(producto.getRepuesto().getId())));
-        }
-
-        double total = venta.getDetalles()
-                .stream()
-                .mapToDouble(DetalleVenta::getSubtotal)
-                .sum();
-        venta.setTotal(total);
-
-
-
+        // Buscar cliente por Id
         venta.setCliente(clienteService.findById(venta.getCliente().getId()));
+        if (venta.getDetalles() != null) {
+            double total = 0.0;
+            for (DetalleVenta detalle : venta.getDetalles()) {
+                detalle.setVenta(venta);
+                // Buscar repuesto en BD
+                Repuesto repuesto = repuestoService.obtenerRepuestoPorId(detalle.getRepuesto().getId());
+                if (repuesto.getStock() < detalle.getCantidad()) {
+                    throw new RuntimeException("Stock insuficiente para: " + repuesto.getNombre());
+                }
+                // Calcular totales
+                detalle.setPrecioUnitario(repuesto.getPrecio());
+                detalle.setSubtotal(repuesto.getPrecio() * detalle.getCantidad());
+                total += detalle.getSubtotal();
+
+                repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
+                detalle.setRepuesto(repuesto);
+            }
+            venta.setTotal(total);
+        }
         return ventaRepository.save(venta);
     }
 
