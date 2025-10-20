@@ -1,8 +1,9 @@
-package com.venta.repuestos.servicios;
+package com.venta.repuestos.servicios.Impl;
 
 import com.venta.repuestos.entidades.Cliente;
 import com.venta.repuestos.exceptions.ClienteNotFoundException;
 import com.venta.repuestos.repositorios.ClienteRepository;
+import com.venta.repuestos.servicios.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,8 +26,8 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public Optional<Cliente> findById(Long id) {
-        return clienteRepository.findById(id);
+    public Cliente findById(Long id) throws  ClienteNotFoundException {
+        return clienteRepository.findById(id).orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado"));
     }
 
     @Override

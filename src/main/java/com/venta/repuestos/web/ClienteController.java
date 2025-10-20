@@ -14,12 +14,8 @@ import java.util.List;
 @RequestMapping("api/v1/clientes")
 public class ClienteController {
 
-    private final ClienteService clienteService;
-
     @Autowired
-    public ClienteController(ClienteService clienteService) {
-        this.clienteService = clienteService;
-    }
+    private ClienteService clienteService;
 
     @GetMapping
     public List<Cliente> list() {
@@ -27,10 +23,8 @@ public class ClienteController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Cliente> getById(@PathVariable Long id) {
-        return clienteService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    public Cliente getById(@PathVariable Long id) {
+        return clienteService.findById(id);
     }
 
     @PostMapping
