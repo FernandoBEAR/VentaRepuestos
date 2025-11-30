@@ -4,12 +4,17 @@ package com.venta.repuestos;
 import com.venta.repuestos.entidades.DetalleVenta;
 import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.entidades.Venta;
+import com.venta.repuestos.entidades.securityentities.PermissionEntity;
+import com.venta.repuestos.entidades.securityentities.RoleEntity;
+import com.venta.repuestos.entidades.securityentities.RoleEnum;
+import com.venta.repuestos.entidades.securityentities.UserEntity;
 import com.venta.repuestos.enums.Disponibilidad;
 import com.venta.repuestos.enums.Marca;
 import com.venta.repuestos.repositorios.ClienteRepository;
 import com.venta.repuestos.repositorios.RepuestoRepository;
 
 import com.venta.repuestos.entidades.Cliente;
+import com.venta.repuestos.repositorios.UserRepository;
 import com.venta.repuestos.repositorios.VentaRepository;
 import com.venta.repuestos.servicios.ClienteService;
 
@@ -17,8 +22,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @SpringBootApplication
@@ -27,6 +34,103 @@ public class Application {
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
+
+    @Bean
+    CommandLineRunner init(UserRepository userRepository) {
+        return args -> {
+
+            /* -------------------------
+               PERMISOS DEL SISTEMA
+            -------------------------- */
+
+            // CLIENTE
+            PermissionEntity clienteRead = PermissionEntity.builder().name("CLIENTE_READ").build();
+            PermissionEntity clienteWrite = PermissionEntity.builder().name("CLIENTE_WRITE").build();
+            PermissionEntity clienteDelete = PermissionEntity.builder().name("CLIENTE_DELETE").build();
+
+            // REPUESTO
+            PermissionEntity repuestoRead = PermissionEntity.builder().name("REPUESTO_READ").build();
+            PermissionEntity repuestoWrite = PermissionEntity.builder().name("REPUESTO_WRITE").build();
+            PermissionEntity repuestoDelete = PermissionEntity.builder().name("REPUESTO_DELETE").build();
+            PermissionEntity repuestoStockManual = PermissionEntity.builder().name("REPUESTO_STOCK_MANUAL").build();
+
+            // VENTA
+            PermissionEntity ventaRead = PermissionEntity.builder().name("VENTA_READ").build();
+            PermissionEntity ventaWrite = PermissionEntity.builder().name("VENTA_WRITE").build();
+            PermissionEntity ventaDelete = PermissionEntity.builder().name("VENTA_DELETE").build();
+
+            /* -------------------------
+               ROLES DEL SISTEMA
+            -------------------------- */
+
+            // ADMIN – Acceso total
+            RoleEntity roleAdmin = RoleEntity.builder()
+                    .roleEnum(RoleEnum.ADMIN)
+                    .permisos(Set.of(
+                            clienteRead, clienteWrite, clienteDelete,
+                            repuestoRead, repuestoWrite, repuestoDelete, repuestoStockManual,
+                            ventaRead, ventaWrite, ventaDelete
+                    ))
+                    .build();
+
+            // VENDEDOR – Operaciones cotidianas
+            RoleEntity roleVendedor = RoleEntity.builder()
+                    .roleEnum(RoleEnum.VENDEDOR)
+                    .permisos(Set.of(
+                            clienteRead, clienteWrite,
+                            repuestoRead,
+                            ventaRead, ventaWrite
+                    ))
+                    .build();
+
+            // INVITADO – Solo consulta
+            RoleEntity roleInvitado = RoleEntity.builder()
+                    .roleEnum(RoleEnum.INVITADO)
+                    .permisos(Set.of(
+                            clienteRead,
+                            repuestoRead,
+                            ventaRead
+                    ))
+                    .build();
+            /* -------------------------
+               USUARIOS INICIALES
+            -------------------------- */
+
+            String pass = new BCryptPasswordEncoder().encode("1234");
+
+            UserEntity admin = UserEntity.builder()
+                    .username("admin")
+                    .password(pass)
+                    .isEnable(true)
+                    .accountNoExpired(true)
+                    .accountNoLocked(true)
+                    .credentialNoExpired(true)
+                    .roles(Set.of(roleAdmin))
+                    .build();
+
+            UserEntity vendedor = UserEntity.builder()
+                    .username("vendedor")
+                    .password(pass)
+                    .isEnable(true)
+                    .accountNoExpired(true)
+                    .accountNoLocked(true)
+                    .credentialNoExpired(true)
+                    .roles(Set.of(roleVendedor))
+                    .build();
+
+            UserEntity invitado = UserEntity.builder()
+                    .username("invitado")
+                    .password(pass)
+                    .isEnable(true)
+                    .accountNoExpired(true)
+                    .accountNoLocked(true)
+                    .credentialNoExpired(true)
+                    .roles(Set.of(roleInvitado))
+                    .build();
+
+            userRepository.saveAll(List.of(admin, vendedor, invitado));
+        };
+    }
 
     //@Bean
     CommandLineRunner start(ClienteService clienteService){
