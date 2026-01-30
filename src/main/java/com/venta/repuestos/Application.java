@@ -33,65 +33,94 @@ public class Application {
     CommandLineRunner init(UserRepository userRepository) {
         return args -> {
 
-            /* -------------------------
-               PERMISOS DEL SISTEMA
-            -------------------------- */
 
-            // CLIENTE
+
+
             PermissionEntity clienteRead = PermissionEntity.builder().name("CLIENTE_READ").build();
-            PermissionEntity clienteWrite = PermissionEntity.builder().name("CLIENTE_WRITE").build();
+            PermissionEntity clienteCreate = PermissionEntity.builder().name("CLIENTE_CREATE").build();
+            PermissionEntity clienteUpdate = PermissionEntity.builder().name("CLIENTE_UPDATE").build();
             PermissionEntity clienteDelete = PermissionEntity.builder().name("CLIENTE_DELETE").build();
 
-            // REPUESTO
-            PermissionEntity repuestoRead = PermissionEntity.builder().name("REPUESTO_READ").build();
-            PermissionEntity repuestoWrite = PermissionEntity.builder().name("REPUESTO_WRITE").build();
-            PermissionEntity repuestoDelete = PermissionEntity.builder().name("REPUESTO_DELETE").build();
-            PermissionEntity repuestoStockManual = PermissionEntity.builder().name("REPUESTO_STOCK_MANUAL").build();
 
-            // VENTA
+            PermissionEntity repuestoRead = PermissionEntity.builder().name("REPUESTO_READ").build();
+            PermissionEntity repuestoCreate = PermissionEntity.builder().name("REPUESTO_CREATE").build();
+            PermissionEntity repuestoUpdate = PermissionEntity.builder().name("REPUESTO_UPDATE").build();
+            PermissionEntity repuestoDelete = PermissionEntity.builder().name("REPUESTO_DELETE").build();
+            PermissionEntity repuestoStock = PermissionEntity.builder().name("REPUESTO_STOCK").build();
+
+
             PermissionEntity ventaRead = PermissionEntity.builder().name("VENTA_READ").build();
-            PermissionEntity ventaWrite = PermissionEntity.builder().name("VENTA_WRITE").build();
+            PermissionEntity ventaCreate = PermissionEntity.builder().name("VENTA_CREATE").build();
+            PermissionEntity ventaUpdate = PermissionEntity.builder().name("VENTA_UPDATE").build();
             PermissionEntity ventaDelete = PermissionEntity.builder().name("VENTA_DELETE").build();
 
-            /* -------------------------
-               ROLES DEL SISTEMA
-            -------------------------- */
 
-            // ADMIN – Acceso total
+            PermissionEntity detalleVentaRead = PermissionEntity.builder().name("DETALLE_VENTA_READ").build();
+            PermissionEntity detalleVentaCreate = PermissionEntity.builder().name("DETALLE_VENTA_CREATE").build();
+            PermissionEntity detalleVentaUpdate = PermissionEntity.builder().name("DETALLE_VENTA_UPDATE").build();
+            PermissionEntity detalleVentaDelete = PermissionEntity.builder().name("DETALLE_VENTA_DELETE").build();
+
+
+            PermissionEntity pagoRead = PermissionEntity.builder().name("PAGO_READ").build();
+            PermissionEntity pagoCreate = PermissionEntity.builder().name("PAGO_CREATE").build();
+            PermissionEntity pagoUpdate = PermissionEntity.builder().name("PAGO_UPDATE").build();
+            PermissionEntity pagoDelete = PermissionEntity.builder().name("PAGO_DELETE").build();
+
+
+            PermissionEntity userRead = PermissionEntity.builder().name("USER_READ").build();
+            PermissionEntity userCreate = PermissionEntity.builder().name("USER_CREATE").build();
+            PermissionEntity userUpdate = PermissionEntity.builder().name("USER_UPDATE").build();
+            PermissionEntity userDelete = PermissionEntity.builder().name("USER_DELETE").build();
+
+
             RoleEntity roleAdmin = RoleEntity.builder()
                     .roleEnum(RoleEnum.ADMIN)
                     .permisos(Set.of(
-                            clienteRead, clienteWrite, clienteDelete,
-                            repuestoRead, repuestoWrite, repuestoDelete, repuestoStockManual,
-                            ventaRead, ventaWrite, ventaDelete
+                            // Clientes - CRUD completo
+                            clienteRead, clienteCreate, clienteUpdate, clienteDelete,
+                            // Repuestos - CRUD completo + stock
+                            repuestoRead, repuestoCreate, repuestoUpdate, repuestoDelete, repuestoStock,
+                            // Ventas - CRUD completo
+                            ventaRead, ventaCreate, ventaUpdate, ventaDelete,
+                            // Detalle Ventas - CRUD completo
+                            detalleVentaRead, detalleVentaCreate, detalleVentaUpdate, detalleVentaDelete,
+                            // Pagos - CRUD completo
+                            pagoRead, pagoCreate, pagoUpdate, pagoDelete,
+                            // Usuarios - CRUD completo
+                            userRead, userCreate, userUpdate, userDelete
+
                     ))
                     .build();
 
-            // VENDEDOR – Operaciones cotidianas
+
             RoleEntity roleVendedor = RoleEntity.builder()
                     .roleEnum(RoleEnum.VENDEDOR)
                     .permisos(Set.of(
-                            clienteRead, clienteWrite,
+                            // Clientes - Crear, actualizar, leer
+                            clienteRead, clienteCreate, clienteUpdate,
+                            // Repuestos - Solo lectura
                             repuestoRead,
-                            ventaRead, ventaWrite
+                            // Ventas - Crear, leer
+                            ventaRead, ventaCreate,
+                            // Detalle Ventas - Crear, leer
+                            detalleVentaRead, detalleVentaCreate,
+                            // Pagos - Crear, leer
+                            pagoRead, pagoCreate
                     ))
                     .build();
 
-            // INVITADO – Solo consulta
-            RoleEntity roleInvitado = RoleEntity.builder()
-                    .roleEnum(RoleEnum.INVITADO)
+            RoleEntity roleLogistica = RoleEntity.builder()
+                    .roleEnum(RoleEnum.LOGISTICA)
                     .permisos(Set.of(
-                            clienteRead,
-                            repuestoRead,
-                            ventaRead
+                            // Repuestos - Crear, actualizar, leer, controlar stock
+                            repuestoRead, repuestoCreate, repuestoUpdate, repuestoStock
                     ))
                     .build();
-            /* -------------------------
-               USUARIOS INICIALES
-            -------------------------- */
+
 
             String pass = new BCryptPasswordEncoder().encode("1234");
 
+            // Usuario administrador con acceso total
             UserEntity admin = UserEntity.builder()
                     .username("admin")
                     .password(pass)
@@ -102,6 +131,7 @@ public class Application {
                     .roles(Set.of(roleAdmin))
                     .build();
 
+            // Usuario vendedor para operaciones de venta
             UserEntity vendedor = UserEntity.builder()
                     .username("vendedor")
                     .password(pass)
@@ -112,17 +142,23 @@ public class Application {
                     .roles(Set.of(roleVendedor))
                     .build();
 
-            UserEntity invitado = UserEntity.builder()
-                    .username("invitado")
+            // Usuario logística para gestión de inventario
+            UserEntity logistica = UserEntity.builder()
+                    .username("logistica")
                     .password(pass)
                     .isEnable(true)
                     .accountNoExpired(true)
                     .accountNoLocked(true)
                     .credentialNoExpired(true)
-                    .roles(Set.of(roleInvitado))
+                    .roles(Set.of(roleLogistica))
                     .build();
 
-            userRepository.saveAll(List.of(admin, vendedor, invitado));
+            userRepository.saveAll(List.of(admin, vendedor, logistica));
+
+            System.out.println("  USUARIOS CREADOS EXITOSAMENTE");
+            System.out.println("  Usuario: admin     | Password: 1234 | Rol: ADMIN");
+            System.out.println("  Usuario: vendedor  | Password: 1234 | Rol: VENDEDOR");
+            System.out.println("  Usuario: logistica | Password: 1234 | Rol: LOGISTICA");
         };
     }
 
