@@ -18,9 +18,10 @@ public interface RepuestoService {
     List<Repuesto> obtenerTodosLosRepuestos();
     List<RepuestoDTO> obtenerTodosLosRepuestosDTO();
     //ACTUALIZAR
-    Repuesto actualizarRepuesto(Long id, Repuesto repuesto) throws RepuestoNotFoundException;
+    Repuesto actualizarRepuesto(Long id, RepuestoDTO repuesto) throws RepuestoNotFoundException;
     Repuesto aumentarStock(Long id, int cantidad)throws RepuestoNotFoundException;
     Repuesto reducirStock(Long id, int cantidad)throws RepuestoNotFoundException;
+    Repuesto aumentarStockPorDevolucion(Long id, int cantidad);
     //ELIMINAR
     void eliminarRepuesto(Long id) throws RepuestoNotFoundException;
 }

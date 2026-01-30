@@ -39,13 +39,19 @@ public class RepuestoController {
     }
 
     @PutMapping("/actualizar/{id}")
-    public Repuesto actualizarRepuesto(@PathVariable Long id, @RequestBody Repuesto repuesto) {
+    public Repuesto actualizarRepuesto(@PathVariable Long id, @RequestBody RepuestoDTO repuesto) {
         return repuestoService.actualizarRepuesto(id, repuesto);
     }
 
     @PutMapping("/{id}/aumentar-stock/{cantidad}")
     public Repuesto aumentarStock(@PathVariable Long id, @PathVariable int cantidad) { // Recibimos la cantidad como un parámetro en la URL
 
+        Repuesto repuestoActualizado = repuestoService.aumentarStock(id, cantidad);
+        return repuestoActualizado;
+    }
+
+    @PutMapping("/{id}/aumentar-stock-pordevolucion/{cantidad}")
+    public Repuesto aumentarStockPorDevolucion(@PathVariable Long id, @PathVariable int cantidad) { // Recibimos la cantidad como un parámetro en la URL
         Repuesto repuestoActualizado = repuestoService.aumentarStock(id, cantidad);
         return repuestoActualizado;
     }

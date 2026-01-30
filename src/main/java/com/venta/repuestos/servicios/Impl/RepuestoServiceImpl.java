@@ -1,15 +1,20 @@
 package com.venta.repuestos.servicios.Impl;
 
 import com.venta.repuestos.dtos.RepuestoDTO;
+import com.venta.repuestos.entidades.FechaMovimiento;
+import com.venta.repuestos.entidades.Movimiento;
 import com.venta.repuestos.entidades.Repuesto;
+import com.venta.repuestos.enums.TipoMovimiento;
 import com.venta.repuestos.exceptions.RepuestoNotFoundException;
 import com.venta.repuestos.mappers.RepuestoMapper;
+import com.venta.repuestos.repositorios.MovimientoRepository;
 import com.venta.repuestos.repositorios.RepuestoRepository;
 import com.venta.repuestos.servicios.RepuestoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,10 +25,24 @@ public class RepuestoServiceImpl implements RepuestoService {
     private RepuestoRepository repuestoRepository;
     @Autowired
     private RepuestoMapper repuestoMapper;
+    @Autowired
+    private MovimientoRepository movimientoRepository;
 
-    @Override
     public Repuesto crearRepuesto(Repuesto repuesto) {
-        return repuestoRepository.save(repuesto);
+
+        Repuesto repuestoExistente = repuestoRepository.findByNombre(repuesto.getNombre());
+
+        if (repuestoExistente != null) {
+            throw new IllegalArgumentException("El repuesto con nombre " + repuesto.getNombre() + " ya existe.");
+        }
+
+        Repuesto repuestoGuardado = repuestoRepository.save(repuesto);
+
+        if (repuestoGuardado.getStock() != null && repuestoGuardado.getStock() > 0) {
+            crearMovimiento(repuestoGuardado, TipoMovimiento.ENTRADA, repuestoGuardado.getStock());
+        }
+
+        return repuestoGuardado;
     }
 
 
@@ -61,49 +80,72 @@ public class RepuestoServiceImpl implements RepuestoService {
     }
 
     @Override
-    public Repuesto actualizarRepuesto(Long id, Repuesto repuesto) throws RepuestoNotFoundException{
+    public Repuesto actualizarRepuesto(Long id, RepuestoDTO repuesto) throws RepuestoNotFoundException{
         Repuesto repuestoExistente = obtenerRepuestoPorId(id);
-        repuestoExistente = repuestoRepository.save(repuesto);
+        repuestoExistente.setNombre(repuesto.getNombre());
+        repuestoExistente.setMarca(repuesto.getMarca());
+        repuestoExistente.setDescripcion(repuesto.getDescripcion());
+        repuestoExistente.setPrecio(repuesto.getPrecio());
+        repuestoExistente.setStock(repuesto.getStock());
+        repuestoRepository.save(repuestoExistente);
         return repuestoExistente;
     }
 
     @Override
     public Repuesto aumentarStock(Long id, int cantidad) throws RepuestoNotFoundException{
-        // 1. Buscamos el repuesto por su ID. Si no existe, el método de abajo lanzará una excepción.
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
-        // 2. Validamos que la cantidad sea positiva.
         if (cantidad <= 0) {
             throw new IllegalArgumentException("La cantidad a aumentar debe ser mayor que cero.");
         }
-
-        // 3. Actualizamos el stock.
+        // actualizar el stock.
         repuesto.setStock(repuesto.getStock() + cantidad);
+        //Crear movimiento
+        crearMovimiento(repuesto, TipoMovimiento.ENTRADA, cantidad);
 
-        // 4. Guardamos el repuesto actualizado en la base de datos.
+        //Guardamos el repuesto actualizado en la base de datos.
         return repuestoRepository.save(repuesto);
     }
 
 
     @Override
     public Repuesto reducirStock(Long id, int cantidad) throws RepuestoNotFoundException{
-        // 1. Buscamos el repuesto.
+        //Buscamos el repuesto.
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
-        // 2. Validamos que la cantidad sea positiva.
+        //Validamos que la cantidad sea positiva.
         if (cantidad <= 0) {
             throw new IllegalArgumentException("La cantidad a reducir debe ser mayor que cero.");
         }
 
-        // 3. ✨ Lógica de negocio CRÍTICA: Validamos que haya stock suficiente.
+        //Validamos que haya stock suficiente.
         if (repuesto.getStock() < cantidad) {
             throw new IllegalStateException("No hay stock suficiente para el repuesto: " + repuesto.getNombre());
         }
 
-        // 4. Actualizamos el stock.
+        //Actualizamos el stock.
         repuesto.setStock(repuesto.getStock() - cantidad);
 
-        // 5. Guardamos el repuesto actualizado.
+        //Creamos movimiento
+        crearMovimiento(repuesto, TipoMovimiento.VENTA, cantidad);
+
+        //Guardamos el repuesto actualizado.
+        return repuestoRepository.save(repuesto);
+    }
+
+    @Override
+    public Repuesto aumentarStockPorDevolucion(Long id, int cantidad) throws RepuestoNotFoundException{
+        Repuesto repuesto = obtenerRepuestoPorId(id);
+
+        if (cantidad <= 0) {
+            throw new IllegalArgumentException("La cantidad a aumentar debe ser mayor que cero.");
+        }
+        // actualizar el stock.
+        repuesto.setStock(repuesto.getStock() + cantidad);
+        //Crear movimiento
+        crearMovimiento(repuesto, TipoMovimiento.DEVOLUCION, cantidad);
+
+        //Guardamos el repuesto actualizado en la base de datos.
         return repuestoRepository.save(repuesto);
     }
 
@@ -114,5 +156,18 @@ public class RepuestoServiceImpl implements RepuestoService {
             throw new RepuestoNotFoundException("Repuesto no encontrado");
         }
         repuestoRepository.deleteById(id);
+    }
+
+    private void crearMovimiento(Repuesto repuesto, TipoMovimiento tipo, Integer cantidad) {
+        LocalDate fecha = LocalDate.now();
+        FechaMovimiento fechaMovimiento = new FechaMovimiento(fecha.getDayOfMonth(), fecha.getMonthValue(), fecha.getYear());
+
+        Movimiento movimiento = new Movimiento();
+        movimiento.setFechaMovimiento(fechaMovimiento);
+        movimiento.setTipoMovimiento(tipo);
+        movimiento.setCantidadDeMovimientos(cantidad);
+        movimiento.setRepuesto(repuesto);
+
+        movimientoRepository.save(movimiento);
     }
 }

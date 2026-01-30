@@ -1,21 +1,15 @@
 package com.venta.repuestos;
 
 
-import com.venta.repuestos.entidades.DetalleVenta;
-import com.venta.repuestos.entidades.Repuesto;
-import com.venta.repuestos.entidades.Venta;
+import com.venta.repuestos.entidades.*;
 import com.venta.repuestos.entidades.securityentities.PermissionEntity;
 import com.venta.repuestos.entidades.securityentities.RoleEntity;
 import com.venta.repuestos.entidades.securityentities.RoleEnum;
 import com.venta.repuestos.entidades.securityentities.UserEntity;
-import com.venta.repuestos.enums.Disponibilidad;
 import com.venta.repuestos.enums.Marca;
-import com.venta.repuestos.repositorios.ClienteRepository;
-import com.venta.repuestos.repositorios.RepuestoRepository;
+import com.venta.repuestos.enums.TipoMovimiento;
+import com.venta.repuestos.repositorios.*;
 
-import com.venta.repuestos.entidades.Cliente;
-import com.venta.repuestos.repositorios.UserRepository;
-import com.venta.repuestos.repositorios.VentaRepository;
 import com.venta.repuestos.servicios.ClienteService;
 
 import org.springframework.boot.CommandLineRunner;
@@ -24,6 +18,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -132,8 +127,8 @@ public class Application {
         };
     }
 
-    //@Bean
-    CommandLineRunner start(ClienteService clienteService){
+    @Bean
+    CommandLineRunner start(ClienteService clienteService, RepuestoRepository repuestoRepository, VentaRepository ventaRepository, ClienteRepository clienteRepository, MovimientoRepository movimientoRepository) {
         return args -> {
             Stream.of("Cristian","Carlos","William","Shyntia").forEach(nombre ->{
                 Cliente clien = new Cliente();
@@ -141,33 +136,18 @@ public class Application {
                 clien.setEmail(nombre.toLowerCase()+"@latinmail.com");
                 clienteService.save(clien);
             });
-        };
-    }
+            Stream.of("Martillo", "Destornillador", "Llave Inglesa", "Taladro").forEach(nombre ->{
+                Repuesto repuesto = new Repuesto();
+                repuesto.setNombre(nombre);
+                Marca[] marcas = Marca.values();
+                int indiceAleatorio = (int) (Math.random() * marcas.length);
+                repuesto.setMarca(marcas[indiceAleatorio]);
+                repuesto.setDescripcion("Descripcion de " +nombre);
+                repuesto.setPrecio(10+Math.random()*400);
+                repuesto.setStock(((int)(Math.random()*100)+100));
+                repuestoRepository.save(repuesto);
+            });
 
-    //@Bean
-	CommandLineRunner start(RepuestoRepository repuestoRepository){
-		return args -> {
-			Stream.of("Martillo", "Destornillador", "Llave Inglesa", "Taladro").forEach(nombre ->{
-				Repuesto repuesto = new Repuesto();
-				repuesto.setNombre(nombre);
-				Marca[] marcas = Marca.values();
-				int indiceAleatorio = (int) (Math.random() * marcas.length);
-				repuesto.setMarca(marcas[indiceAleatorio]);
-				repuesto.setDescripcion("Descripcion de " +nombre);
-				repuesto.setPrecio(10+Math.random()*400);
-				repuesto.setStock((int)(Math.random()*100));
-				//Siguiente metodo no necesario ya que se automatizo en la clase
-			//	repuesto.setDisponibilidad(Math.random() < 0.5 ? Disponibilidad.DISPONIBLE : Disponibilidad.NO_DISPONIBLE);
-				repuestoRepository.save(repuesto);
-			});
-		};
-	}
-
-    //@Bean
-    CommandLineRunner generarVentas(VentaRepository ventaRepository,
-                                    ClienteRepository clienteRepository,
-                                    RepuestoRepository repuestoRepository) {
-        return args -> {
             List<Cliente> clientes = clienteRepository.findAll();
             List<Repuesto> repuestos = repuestoRepository.findAll();
 
@@ -196,8 +176,21 @@ public class Application {
 
                     // Simular reducción de stock
                     int nuevoStock = repuesto.getStock() - cantidad;
+                    Movimiento movimiento = new Movimiento();
+                    movimiento.setRepuesto(detalle.getRepuesto());
+                    movimiento.setTipoMovimiento(TipoMovimiento.VENTA);
+                    movimiento.setCantidadDeMovimientos(detalle.getCantidad());
+                    movimiento.setFechaMovimiento(
+                            new FechaMovimiento(
+                                    LocalDate.now().getDayOfMonth(),
+                                    LocalDate.now().getMonthValue(),
+                                    LocalDate.now().getYear()
+                            )
+                    );
+
                     repuesto.setStock(Math.max(nuevoStock, 0));
                     repuestoRepository.save(repuesto);
+                    movimientoRepository.save(movimiento);
 
                     detalles.add(detalle);
                 }
@@ -210,7 +203,7 @@ public class Application {
             }
 
             System.out.println("Ventas generadas correctamente en la base de datos");
+
         };
     }
-
 }

@@ -48,7 +48,7 @@ public class VentaServicioImpl implements VentaService {
                 detalle.setSubtotal(repuesto.getPrecio() * detalle.getCantidad());
                 total += detalle.getSubtotal();
 
-                repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
+                //repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
                 detalle.setRepuesto(repuesto);
             }
             venta.setTotal(total);

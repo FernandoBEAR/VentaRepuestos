@@ -1,11 +1,15 @@
 package com.venta.repuestos.entidades;
 
-import com.venta.repuestos.enums.Disponibilidad;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.venta.repuestos.enums.Marca;
+import com.venta.repuestos.enums.TipoMovimiento;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -27,17 +31,8 @@ public class Repuesto {
 
     private Integer stock;
 
-    @Enumerated(EnumType.STRING)
-    private Disponibilidad disponibilidad;
+    @OneToMany(mappedBy = "repuesto", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Movimiento> movimientos = new ArrayList<>();
 
-    // 👇 Callback metodo para actualizar el estado de disponibilidad antes de guardar o actualizar
-    @PrePersist
-    @PreUpdate
-    public void actualizarEstadoDisponibilidad() {
-        if (this.stock != null && this.stock > 0) {
-            this.disponibilidad = Disponibilidad.DISPONIBLE;
-        } else {
-            this.disponibilidad = Disponibilidad.NO_DISPONIBLE;
-        }
-    }
 }
