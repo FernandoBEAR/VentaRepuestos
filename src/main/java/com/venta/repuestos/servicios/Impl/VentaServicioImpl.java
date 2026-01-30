@@ -1,5 +1,6 @@
 package com.venta.repuestos.servicios.Impl;
 
+import com.venta.repuestos.dtos.EntregarProductosResponse;
 import com.venta.repuestos.entidades.DetalleVenta;
 import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.entidades.Venta;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,15 +52,34 @@ public class VentaServicioImpl implements VentaService {
                 detalle.setSubtotal(repuesto.getPrecio() * detalle.getCantidad());
                 total += detalle.getSubtotal();
 
-                repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
+                //repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
                 detalle.setRepuesto(repuesto);
             }
             venta.setTotal(total);
             venta.getPago().setMonto(total);
             venta.getPago().setEstadoPago(EstadoPago.POR_PAGAR);
+            venta.getPago().setFecha(LocalDate.now());
             venta.getPago().setTipoComprobante(TipoComprobante.BOLETA);
         }
         return ventaRepository.save(venta);
+    }
+
+    @Override
+    public List<Repuesto> entregarProductos(Long ventaId) {
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + ventaId));
+
+        if (venta.getPago().getEstadoPago() == EstadoPago.PAGADO) {
+            for (DetalleVenta detalle : venta.getDetalles()) {
+                Repuesto repuesto = repuestoService.obtenerRepuestoPorId(detalle.getRepuesto().getId());
+                if (repuesto.getStock() < detalle.getCantidad()) {
+                    throw new RuntimeException("Stock insuficiente para: " + repuesto.getNombre());
+                }
+                repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
+            }
+        }
+        ventaRepository.save(venta);
+        return venta.getDetalles().stream().map(DetalleVenta::getRepuesto).toList();
     }
 
     @Override

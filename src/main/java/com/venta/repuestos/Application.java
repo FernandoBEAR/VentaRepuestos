@@ -29,7 +29,7 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 	}
 
-    @Bean
+    //@Bean
     CommandLineRunner init(UserRepository userRepository) {
         return args -> {
 
@@ -126,7 +126,7 @@ public class Application {
         };
     }
 
-    @Bean
+    //@Bean
     CommandLineRunner start(ClienteService clienteService, RepuestoRepository repuestoRepository, VentaRepository ventaRepository, ClienteRepository clienteRepository, MovimientoRepository movimientoRepository) {
         return args -> {
             Stream.of("Cristian","Carlos","William","Shyntia").forEach(nombre ->{

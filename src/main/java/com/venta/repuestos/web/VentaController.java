@@ -4,6 +4,7 @@ package com.venta.repuestos.web;
 import com.venta.repuestos.dtos.DetalleVentaDTO;
 import com.venta.repuestos.dtos.VentaDTO;
 import com.venta.repuestos.entidades.DetalleVenta;
+import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.entidades.Venta;
 import com.venta.repuestos.exceptions.RecursoNoEncontradoException;
 import com.venta.repuestos.mappers.VentaMapper;
@@ -96,6 +97,13 @@ public class VentaController {
         return ResponseEntity.ok(venta.getDetalles().stream()
                 .map(ventaMapper::mapearDeDetalle)
                 .collect(Collectors.toList()));
+    }
+
+    @PutMapping("/{id}/entregar-productos")
+    public List<Repuesto> entregarProductos(@PathVariable Long id) {
+
+        List<Repuesto> repuestosEntregados = ventaService.entregarProductos(id);
+        return repuestosEntregados;
     }
 
 }
