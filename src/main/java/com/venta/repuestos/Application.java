@@ -6,8 +6,7 @@ import com.venta.repuestos.entidades.securityentities.PermissionEntity;
 import com.venta.repuestos.entidades.securityentities.RoleEntity;
 import com.venta.repuestos.entidades.securityentities.RoleEnum;
 import com.venta.repuestos.entidades.securityentities.UserEntity;
-import com.venta.repuestos.enums.Marca;
-import com.venta.repuestos.enums.TipoMovimiento;
+import com.venta.repuestos.enums.*;
 import com.venta.repuestos.repositorios.*;
 
 import com.venta.repuestos.servicios.ClienteService;
@@ -198,6 +197,17 @@ public class Application {
                 double total = detalles.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
                 venta.setTotal(total);
                 venta.setDetalles(detalles);
+
+                Pago pago = new Pago();
+                pago.setEstadoPago(EstadoPago.PAGADO);
+                pago.setMetodoPago(MetodoPago.EFECTIVO);
+                pago.setMonto(total);
+                pago.setTipoComprobante(TipoComprobante.BOLETA);
+                pago.setFecha(LocalDate.now());
+                pago.setVenta(venta);
+
+                venta.setPago(pago);
+
 
                 ventaRepository.save(venta);
             }

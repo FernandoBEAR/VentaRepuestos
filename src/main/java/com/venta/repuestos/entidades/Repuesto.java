@@ -32,7 +32,7 @@ public class Repuesto {
     private Integer stock;
 
     @OneToMany(mappedBy = "repuesto", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    //@JsonManagedReference
     private List<Movimiento> movimientos = new ArrayList<>();
 
 }

@@ -1,5 +1,6 @@
 package com.venta.repuestos.entidades;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,4 +22,7 @@ public class Venta {
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
     //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private List<DetalleVenta> detalles;
+    @OneToOne(mappedBy = "venta", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private Pago pago;
 }

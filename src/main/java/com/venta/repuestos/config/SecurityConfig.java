@@ -95,7 +95,7 @@ public class SecurityConfig {
                     /* ───────────────────────────────
                        RESTO DE ENDPOINTS NO PERMITIDOS
                     ─────────────────────────────── */
-                    auth.anyRequest().denyAll();
+                    auth.anyRequest().permitAll();
                 })
 
                 .authenticationProvider(authProvider)

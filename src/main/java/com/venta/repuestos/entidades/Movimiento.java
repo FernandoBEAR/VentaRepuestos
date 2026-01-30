@@ -33,6 +33,6 @@ public class Movimiento {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_almacen", nullable = false)
     @JsonIgnore
-    @JsonBackReference
+    //@JsonBackReference
     private Repuesto repuesto;
 }

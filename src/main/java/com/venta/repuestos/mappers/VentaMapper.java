@@ -21,6 +21,7 @@ public class VentaMapper {
                 .map(this::mapearDeDetalle)
                 .collect(Collectors.toList());
         dto.setDetalles(detallesDTO);
+        dto.setPago(venta.getPago());
 
         return dto;
     }

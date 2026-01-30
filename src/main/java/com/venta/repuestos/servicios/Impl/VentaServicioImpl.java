@@ -3,6 +3,8 @@ package com.venta.repuestos.servicios.Impl;
 import com.venta.repuestos.entidades.DetalleVenta;
 import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.entidades.Venta;
+import com.venta.repuestos.enums.EstadoPago;
+import com.venta.repuestos.enums.TipoComprobante;
 import com.venta.repuestos.repositorios.DetalleVentaRepository;
 import com.venta.repuestos.repositorios.VentaRepository;
 import com.venta.repuestos.servicios.ClienteService;
@@ -48,10 +50,13 @@ public class VentaServicioImpl implements VentaService {
                 detalle.setSubtotal(repuesto.getPrecio() * detalle.getCantidad());
                 total += detalle.getSubtotal();
 
-                //repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
+                repuestoService.reducirStock(repuesto.getId(), detalle.getCantidad());
                 detalle.setRepuesto(repuesto);
             }
             venta.setTotal(total);
+            venta.getPago().setMonto(total);
+            venta.getPago().setEstadoPago(EstadoPago.POR_PAGAR);
+            venta.getPago().setTipoComprobante(TipoComprobante.BOLETA);
         }
         return ventaRepository.save(venta);
     }
