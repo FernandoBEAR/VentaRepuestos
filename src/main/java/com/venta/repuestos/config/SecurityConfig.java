@@ -168,6 +168,21 @@ public class SecurityConfig {
                                         auth.requestMatchers(HttpMethod.DELETE, "/api/v1/pagos/**")
                                                         .hasRole("ADMIN");
 
+                                    auth.requestMatchers(HttpMethod.GET, "/api/semantico/**")
+                                                    .permitAll();
+
+                                    // Creación: ADMIN y VENDEDOR pueden registrar pagos
+                                    auth.requestMatchers(HttpMethod.POST, "/api/semantico/**")
+                                            .permitAll();
+
+                                    // Actualización: Solo ADMIN puede modificar pagos
+                                    auth.requestMatchers(HttpMethod.PUT, "/api/semantico/**")
+                                            .permitAll();
+
+                                    // Eliminación: Solo ADMIN puede eliminar pagos
+                                    auth.requestMatchers(HttpMethod.DELETE, "/api/semantico/**")
+                                            .permitAll();
+
                                         auth.anyRequest().denyAll();
                                 })
 

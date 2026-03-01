@@ -38,6 +38,14 @@ vr:Pago a owl:Class ;
     rdfs:label "Pago" ;
     rdfs:comment "Un pago asociado a una venta." .
 
+vr:DetalleVenta a owl:Class ;
+    rdfs:label "DetalleVenta" ;
+    rdfs:comment "Línea de detalle de una venta: repuesto, cantidad y subtotal." .
+
+vr:Movimiento a owl:Class ;
+    rdfs:label "Movimiento" ;
+    rdfs:comment "Movimiento de inventario (entrada, venta, devolución) sobre un repuesto." .
+
 # --- Propiedades OWL (Object Properties) ---
 
 vr:tieneMarca a owl:ObjectProperty ;
@@ -59,6 +67,26 @@ vr:tieneMetodoPago a owl:ObjectProperty ;
     rdfs:domain vr:Pago ;
     rdfs:range skos:Concept ;
     rdfs:label "tiene método de pago" .
+
+vr:tieneDetalle a owl:ObjectProperty ;
+    rdfs:domain vr:Venta ;
+    rdfs:range vr:DetalleVenta ;
+    rdfs:label "tiene detalle de venta" .
+
+vr:detalleRepuesto a owl:ObjectProperty ;
+    rdfs:domain vr:DetalleVenta ;
+    rdfs:range vr:Repuesto ;
+    rdfs:label "repuesto del detalle" .
+
+vr:movimientoRepuesto a owl:ObjectProperty ;
+    rdfs:domain vr:Movimiento ;
+    rdfs:range vr:Repuesto ;
+    rdfs:label "repuesto del movimiento" .
+
+vr:tieneTipoMovimiento a owl:ObjectProperty ;
+    rdfs:domain vr:Movimiento ;
+    rdfs:range skos:Concept ;
+    rdfs:label "tipo de movimiento" .
 
 # --- Propiedades OWL (Datatype Properties) ---
 
@@ -91,6 +119,56 @@ vr:montoPago a owl:DatatypeProperty ;
     rdfs:domain vr:Pago ;
     rdfs:range xsd:double ;
     rdfs:label "monto del pago" .
+
+vr:estadoPago a owl:DatatypeProperty ;
+    rdfs:domain vr:Pago ;
+    rdfs:range xsd:string ;
+    rdfs:label "estado del pago" .
+
+vr:tipoComprobante a owl:DatatypeProperty ;
+    rdfs:domain vr:Pago ;
+    rdfs:range xsd:string ;
+    rdfs:label "tipo de comprobante" .
+
+vr:fechaPago a owl:DatatypeProperty ;
+    rdfs:domain vr:Pago ;
+    rdfs:range xsd:string ;
+    rdfs:label "fecha del pago" .
+
+vr:cantidadDetalle a owl:DatatypeProperty ;
+    rdfs:domain vr:DetalleVenta ;
+    rdfs:range xsd:integer ;
+    rdfs:label "cantidad en el detalle" .
+
+vr:precioUnitario a owl:DatatypeProperty ;
+    rdfs:domain vr:DetalleVenta ;
+    rdfs:range xsd:double ;
+    rdfs:label "precio unitario" .
+
+vr:subtotal a owl:DatatypeProperty ;
+    rdfs:domain vr:DetalleVenta ;
+    rdfs:range xsd:double ;
+    rdfs:label "subtotal del detalle" .
+
+vr:cantidadMovimiento a owl:DatatypeProperty ;
+    rdfs:domain vr:Movimiento ;
+    rdfs:range xsd:integer ;
+    rdfs:label "cantidad del movimiento" .
+
+vr:diaMovimiento a owl:DatatypeProperty ;
+    rdfs:domain vr:Movimiento ;
+    rdfs:range xsd:integer ;
+    rdfs:label "día del movimiento" .
+
+vr:mesMovimiento a owl:DatatypeProperty ;
+    rdfs:domain vr:Movimiento ;
+    rdfs:range xsd:integer ;
+    rdfs:label "mes del movimiento" .
+
+vr:anioMovimiento a owl:DatatypeProperty ;
+    rdfs:domain vr:Movimiento ;
+    rdfs:range xsd:integer ;
+    rdfs:label "año del movimiento" .
 
 # =============================================================================
 # SKOS - Taxonomías y Esquemas de Conceptos
@@ -161,51 +239,41 @@ vr:MovimientoEntrada a skos:Concept ;
     skos:inScheme vr:EsquemaTiposMovimiento ;
     skos:prefLabel "ENTRADA" .
 
+# --- Esquema de Estados de Pago ---
+vr:EsquemaEstadosPago a skos:ConceptScheme ;
+    skos:prefLabel "Estados de Pago" .
+
+vr:EstadoPagado a skos:Concept ;
+    skos:inScheme vr:EsquemaEstadosPago ;
+    skos:prefLabel "PAGADO" .
+
+vr:EstadoPendiente a skos:Concept ;
+    skos:inScheme vr:EsquemaEstadosPago ;
+    skos:prefLabel "PENDIENTE" .
+
+vr:EstadoAnulado a skos:Concept ;
+    skos:inScheme vr:EsquemaEstadosPago ;
+    skos:prefLabel "ANULADO" .
+
+# --- Esquema de Tipos de Comprobante ---
+vr:EsquemaTiposComprobante a skos:ConceptScheme ;
+    skos:prefLabel "Tipos de Comprobante" .
+
+vr:ComprobanteBoleta a skos:Concept ;
+    skos:inScheme vr:EsquemaTiposComprobante ;
+    skos:prefLabel "BOLETA" .
+
+vr:ComprobanteFactura a skos:Concept ;
+    skos:inScheme vr:EsquemaTiposComprobante ;
+    skos:prefLabel "FACTURA" .
+
+vr:ComprobanteTicket a skos:Concept ;
+    skos:inScheme vr:EsquemaTiposComprobante ;
+    skos:prefLabel "TICKET" .
+
 # =============================================================================
-# DATOS DE EJEMPLO (Instancias RDF)
+# NOTA: Las instancias de Repuesto y Cliente se cargan dinámicamente
+#       desde la base de datos al arrancar la aplicación (OntologyLoaderService).
+#       Este archivo solo contiene el esquema OWL y las taxonomías SKOS.
 # =============================================================================
 
-# --- Repuestos ---
-vr:repuesto_1 a vr:Repuesto ;
-    schema:name "Taladro Percutor 13mm" ;
-    vr:descripcion "Taladro percutor profesional de 13mm con velocidad variable" ;
-    vr:precio 189.90 ;
-    vr:stock 25 ;
-    vr:tieneMarca vr:MarcaBosch .
-
-vr:repuesto_2 a vr:Repuesto ;
-    schema:name "Llave Combinada 12mm" ;
-    vr:descripcion "Llave combinada cromada de 12mm" ;
-    vr:precio 15.50 ;
-    vr:stock 100 ;
-    vr:tieneMarca vr:MarcaStanley .
-
-vr:repuesto_3 a vr:Repuesto ;
-    schema:name "Desarmador Phillips #2" ;
-    vr:descripcion "Desarmador Phillips punta magnética" ;
-    vr:precio 12.90 ;
-    vr:stock 50 ;
-    vr:tieneMarca vr:MarcaTrupper .
-
-vr:repuesto_4 a vr:Repuesto ;
-    schema:name "Disco de Corte 4.5 pulgadas" ;
-    vr:descripcion "Disco de corte para metal de 4.5 pulgadas" ;
-    vr:precio 8.50 ;
-    vr:stock 200 ;
-    vr:tieneMarca vr:MarcaBosch .
-
-vr:repuesto_5 a vr:Repuesto ;
-    schema:name "Flexómetro 5m" ;
-    vr:descripcion "Flexómetro profesional de 5 metros con gancho magnético" ;
-    vr:precio 25.00 ;
-    vr:stock 75 ;
-    vr:tieneMarca vr:MarcaTrupper .
-
-# --- Clientes ---
-vr:cliente_1 a vr:Cliente ;
-    foaf:name "Juan Pérez" ;
-    vr:email "juan.perez@email.com" .
-
-vr:cliente_2 a vr:Cliente ;
-    foaf:name "María García" ;
-    vr:email "maria.garcia@email.com" .

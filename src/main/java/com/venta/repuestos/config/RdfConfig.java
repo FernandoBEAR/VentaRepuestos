@@ -12,7 +12,14 @@ import java.io.InputStream;
 
 /**
  * Configuración de Apache Jena para Web Semántica.
- * Crea un Dataset TDB2 en memoria y carga la ontología al arrancar.
+ *
+ * Responsabilidades:
+ *  - Crea el Dataset TDB2 en memoria.
+ *  - Carga ÚNICAMENTE el esquema OWL/SKOS desde repuestos_ontology.ttl
+ *    (clases, propiedades y taxonomías; sin instancias hardcodeadas).
+ *
+ * Las instancias de datos (Repuesto, Cliente) son inyectadas dinámicamente
+ * por OntologyLoaderService al arrancar y cuando se solicite recarga.
  */
 @Configuration
 public class RdfConfig {
@@ -27,12 +34,13 @@ public class RdfConfig {
                 Txn.executeWrite(dataset, () -> {
                     RDFDataMgr.read(dataset, in, org.apache.jena.riot.Lang.TURTLE);
                 });
-                System.out.println("[RDF] Ontología cargada en el Dataset RDF correctamente.");
+                System.out.println("[RDF] Esquema OWL/SKOS cargado en el Dataset RDF correctamente.");
+                System.out.println("[RDF] Las instancias de datos se cargarán desde la BD vía OntologyLoaderService.");
             } else {
                 System.err.println("[RDF] ERROR: No se encontró repuestos_ontology.ttl");
             }
         } catch (Exception e) {
-            System.err.println("[RDF] Error al cargar la ontología: " + e.getMessage());
+            System.err.println("[RDF] Error al cargar el esquema OWL: " + e.getMessage());
         }
 
         return dataset;
