@@ -1,0 +1,211 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema: <http://schema.org/> .
+@prefix gr:     <http://purl.org/goodrelations/v1#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix vr:     <http://www.ventarepuestos.com/ontology#> .
+
+# =============================================================================
+# ONTOLOGÍA OWL - Definición del dominio VentaRepuestos
+# =============================================================================
+
+vr: a owl:Ontology ;
+    rdfs:label "Ontología de Venta de Repuestos" ;
+    rdfs:comment "Ontología OWL que modela el dominio de una tienda de repuestos, incluyendo productos, clientes, ventas y pagos." .
+
+# --- Clases OWL ---
+
+vr:Repuesto a owl:Class ;
+    rdfs:subClassOf gr:ProductOrServiceModel ;
+    rdfs:label "Repuesto" ;
+    rdfs:comment "Un repuesto o producto disponible para la venta." .
+
+vr:Cliente a owl:Class ;
+    rdfs:subClassOf foaf:Person ;
+    rdfs:label "Cliente" ;
+    rdfs:comment "Una persona que compra repuestos." .
+
+vr:Venta a owl:Class ;
+    rdfs:subClassOf schema:Order ;
+    rdfs:label "Venta" ;
+    rdfs:comment "Una transacción de venta de repuestos a un cliente." .
+
+vr:Pago a owl:Class ;
+    rdfs:subClassOf schema:PayAction ;
+    rdfs:label "Pago" ;
+    rdfs:comment "Un pago asociado a una venta." .
+
+# --- Propiedades OWL (Object Properties) ---
+
+vr:tieneMarca a owl:ObjectProperty ;
+    rdfs:domain vr:Repuesto ;
+    rdfs:range skos:Concept ;
+    rdfs:label "tiene marca" .
+
+vr:tieneCliente a owl:ObjectProperty ;
+    rdfs:domain vr:Venta ;
+    rdfs:range vr:Cliente ;
+    rdfs:label "tiene cliente" .
+
+vr:tienePago a owl:ObjectProperty ;
+    rdfs:domain vr:Venta ;
+    rdfs:range vr:Pago ;
+    rdfs:label "tiene pago" .
+
+vr:tieneMetodoPago a owl:ObjectProperty ;
+    rdfs:domain vr:Pago ;
+    rdfs:range skos:Concept ;
+    rdfs:label "tiene método de pago" .
+
+# --- Propiedades OWL (Datatype Properties) ---
+
+vr:precio a owl:DatatypeProperty ;
+    rdfs:domain vr:Repuesto ;
+    rdfs:range xsd:double ;
+    rdfs:label "precio" .
+
+vr:stock a owl:DatatypeProperty ;
+    rdfs:domain vr:Repuesto ;
+    rdfs:range xsd:integer ;
+    rdfs:label "stock disponible" .
+
+vr:descripcion a owl:DatatypeProperty ;
+    rdfs:domain vr:Repuesto ;
+    rdfs:range xsd:string ;
+    rdfs:label "descripción" .
+
+vr:email a owl:DatatypeProperty ;
+    rdfs:domain vr:Cliente ;
+    rdfs:range xsd:string ;
+    rdfs:label "correo electrónico" .
+
+vr:totalVenta a owl:DatatypeProperty ;
+    rdfs:domain vr:Venta ;
+    rdfs:range xsd:double ;
+    rdfs:label "total de la venta" .
+
+vr:montoPago a owl:DatatypeProperty ;
+    rdfs:domain vr:Pago ;
+    rdfs:range xsd:double ;
+    rdfs:label "monto del pago" .
+
+# =============================================================================
+# SKOS - Taxonomías y Esquemas de Conceptos
+# =============================================================================
+
+# --- Esquema de Marcas ---
+vr:EsquemaMarcas a skos:ConceptScheme ;
+    skos:prefLabel "Marcas de Repuestos" ;
+    skos:definition "Taxonomía de marcas disponibles en la tienda." .
+
+vr:MarcaTrupper a skos:Concept ;
+    skos:inScheme vr:EsquemaMarcas ;
+    skos:prefLabel "TRUPPER" ;
+    skos:definition "Marca de herramientas y repuestos Trupper." .
+
+vr:MarcaStanley a skos:Concept ;
+    skos:inScheme vr:EsquemaMarcas ;
+    skos:prefLabel "STANLEY" ;
+    skos:definition "Marca de herramientas y repuestos Stanley." .
+
+vr:MarcaBosch a skos:Concept ;
+    skos:inScheme vr:EsquemaMarcas ;
+    skos:prefLabel "BOSCH" ;
+    skos:definition "Marca de herramientas y repuestos Bosch." .
+
+# --- Esquema de Métodos de Pago ---
+vr:EsquemaMetodosPago a skos:ConceptScheme ;
+    skos:prefLabel "Métodos de Pago" ;
+    skos:definition "Formas de pago aceptadas." .
+
+vr:PagoEfectivo a skos:Concept ;
+    skos:inScheme vr:EsquemaMetodosPago ;
+    skos:prefLabel "EFECTIVO" .
+
+vr:PagoTarjetaCredito a skos:Concept ;
+    skos:inScheme vr:EsquemaMetodosPago ;
+    skos:prefLabel "TARJETA_CREDITO" .
+
+vr:PagoTarjetaDebito a skos:Concept ;
+    skos:inScheme vr:EsquemaMetodosPago ;
+    skos:prefLabel "TARJETA_DEBITO" .
+
+vr:PagoTransferencia a skos:Concept ;
+    skos:inScheme vr:EsquemaMetodosPago ;
+    skos:prefLabel "TRANSFERENCIA" .
+
+vr:PagoYape a skos:Concept ;
+    skos:inScheme vr:EsquemaMetodosPago ;
+    skos:prefLabel "YAPE" .
+
+vr:PagoPlin a skos:Concept ;
+    skos:inScheme vr:EsquemaMetodosPago ;
+    skos:prefLabel "PLIN" .
+
+# --- Esquema de Tipos de Movimiento ---
+vr:EsquemaTiposMovimiento a skos:ConceptScheme ;
+    skos:prefLabel "Tipos de Movimiento de Inventario" .
+
+vr:MovimientoVenta a skos:Concept ;
+    skos:inScheme vr:EsquemaTiposMovimiento ;
+    skos:prefLabel "VENTA" .
+
+vr:MovimientoDevolucion a skos:Concept ;
+    skos:inScheme vr:EsquemaTiposMovimiento ;
+    skos:prefLabel "DEVOLUCION" .
+
+vr:MovimientoEntrada a skos:Concept ;
+    skos:inScheme vr:EsquemaTiposMovimiento ;
+    skos:prefLabel "ENTRADA" .
+
+# =============================================================================
+# DATOS DE EJEMPLO (Instancias RDF)
+# =============================================================================
+
+# --- Repuestos ---
+vr:repuesto_1 a vr:Repuesto ;
+    schema:name "Taladro Percutor 13mm" ;
+    vr:descripcion "Taladro percutor profesional de 13mm con velocidad variable" ;
+    vr:precio 189.90 ;
+    vr:stock 25 ;
+    vr:tieneMarca vr:MarcaBosch .
+
+vr:repuesto_2 a vr:Repuesto ;
+    schema:name "Llave Combinada 12mm" ;
+    vr:descripcion "Llave combinada cromada de 12mm" ;
+    vr:precio 15.50 ;
+    vr:stock 100 ;
+    vr:tieneMarca vr:MarcaStanley .
+
+vr:repuesto_3 a vr:Repuesto ;
+    schema:name "Desarmador Phillips #2" ;
+    vr:descripcion "Desarmador Phillips punta magnética" ;
+    vr:precio 12.90 ;
+    vr:stock 50 ;
+    vr:tieneMarca vr:MarcaTrupper .
+
+vr:repuesto_4 a vr:Repuesto ;
+    schema:name "Disco de Corte 4.5 pulgadas" ;
+    vr:descripcion "Disco de corte para metal de 4.5 pulgadas" ;
+    vr:precio 8.50 ;
+    vr:stock 200 ;
+    vr:tieneMarca vr:MarcaBosch .
+
+vr:repuesto_5 a vr:Repuesto ;
+    schema:name "Flexómetro 5m" ;
+    vr:descripcion "Flexómetro profesional de 5 metros con gancho magnético" ;
+    vr:precio 25.00 ;
+    vr:stock 75 ;
+    vr:tieneMarca vr:MarcaTrupper .
+
+# --- Clientes ---
+vr:cliente_1 a vr:Cliente ;
+    foaf:name "Juan Pérez" ;
+    vr:email "juan.perez@email.com" .
+
+vr:cliente_2 a vr:Cliente ;
+    foaf:name "María García" ;
+    vr:email "maria.garcia@email.com" .

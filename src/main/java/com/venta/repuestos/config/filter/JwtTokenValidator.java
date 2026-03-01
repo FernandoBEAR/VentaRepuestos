@@ -29,29 +29,30 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String jwtToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        //Si el token llega lo trabajamos
+        // Si el token llega lo trabajamos
         if (jwtToken != null) {
-            jwtToken = jwtToken.substring(7); //Los token inician con un Bearer adiosjadioasj
+            jwtToken = jwtToken.substring(7); // Los token inician con un Bearer adiosjadioasj
             DecodedJWT decodedJWT = jwtUtils.validateToken(jwtToken);
 
             String username = jwtUtils.extractUsername(decodedJWT);
-            String stringAuthorities = jwtUtils.getSpecificClaim(decodedJWT,"authorities").asString();
+            String stringAuthorities = jwtUtils.getSpecificClaim(decodedJWT, "authorities").asString();
 
-            //Seteamos los permisos en una coleccion por la separacion de comas
-            Collection<? extends GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(stringAuthorities);
+            // Seteamos los permisos en una coleccion por la separacion de comas
+            Collection<? extends GrantedAuthority> authorities = AuthorityUtils
+                    .commaSeparatedStringToAuthorityList(stringAuthorities);
 
             SecurityContext context = SecurityContextHolder.getContext();
-            Authentication authentication = new UsernamePasswordAuthenticationToken(username,null,authorities);
+            Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
         }
 
-        //Sino continua con el siguiente filtro
-        filterChain.doFilter(request,response);
+        // Sino continua con el siguiente filtro
+        filterChain.doFilter(request, response);
     }
 }
