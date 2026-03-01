@@ -9,6 +9,7 @@ import com.venta.repuestos.exceptions.RepuestoNotFoundException;
 import com.venta.repuestos.mappers.RepuestoMapper;
 import com.venta.repuestos.repositorios.MovimientoRepository;
 import com.venta.repuestos.repositorios.RepuestoRepository;
+import com.venta.repuestos.repositorios.SparqlRepository;
 import com.venta.repuestos.servicios.RepuestoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,8 @@ public class RepuestoServiceImpl implements RepuestoService {
     private RepuestoMapper repuestoMapper;
     @Autowired
     private MovimientoRepository movimientoRepository;
+    @Autowired
+    private SparqlRepository sparqlRepository;
 
     public Repuesto crearRepuesto(Repuesto repuesto) {
 
@@ -42,13 +45,27 @@ public class RepuestoServiceImpl implements RepuestoService {
             crearMovimiento(repuestoGuardado, TipoMovimiento.ENTRADA, repuestoGuardado.getStock());
         }
 
+        try {
+            // Sincronizar con la Web Semántica (Apache Jena)
+            RepuestoDTO repuestoDTO = repuestoMapper.mapearDeRepuestoADTO(repuestoGuardado);
+            boolean guardadoRDF = sparqlRepository.insertarRepuesto(repuestoDTO);
+            if (guardadoRDF) {
+                System.out.println(
+                        "[SINCRONIZACIÓN] Repuesto '" + repuestoGuardado.getNombre() + "' agregado al Grafo RDF.");
+            } else {
+                System.err.println("[SINCRONIZACIÓN] Falla silenciosa al agregar repuesto al Grafo RDF.");
+            }
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN - ERROR] No se pudo guardar en RDF: " + e.getMessage());
+        }
+
         return repuestoGuardado;
     }
 
-
     @Override
     public Repuesto obtenerRepuestoPorId(Long id) throws RepuestoNotFoundException {
-        return repuestoRepository.findById(id).orElseThrow(()-> new RepuestoNotFoundException("Repuesto no encontrado"));
+        return repuestoRepository.findById(id)
+                .orElseThrow(() -> new RepuestoNotFoundException("Repuesto no encontrado"));
     }
 
     @Override
@@ -60,7 +77,7 @@ public class RepuestoServiceImpl implements RepuestoService {
     @Override
     public Repuesto obtenerRepuestoPorNombre(String nombre) throws RepuestoNotFoundException {
         Repuesto repuesto = repuestoRepository.findByNombre(nombre);
-        if (repuesto==null){
+        if (repuesto == null) {
             throw new RepuestoNotFoundException("Repuesto no encontrado");
         }
         return repuesto;
@@ -74,13 +91,14 @@ public class RepuestoServiceImpl implements RepuestoService {
     @Override
     public List<RepuestoDTO> obtenerTodosLosRepuestosDTO() {
         List<Repuesto> repuestos = repuestoRepository.findAll();
-        List<RepuestoDTO> repuestoDTOS =repuestos.stream().map(repuesto -> repuestoMapper.mapearDeRepuestoADTO(repuesto))
+        List<RepuestoDTO> repuestoDTOS = repuestos.stream()
+                .map(repuesto -> repuestoMapper.mapearDeRepuestoADTO(repuesto))
                 .collect(Collectors.toList());
         return repuestoDTOS;
     }
 
     @Override
-    public Repuesto actualizarRepuesto(Long id, RepuestoDTO repuesto) throws RepuestoNotFoundException{
+    public Repuesto actualizarRepuesto(Long id, RepuestoDTO repuesto) throws RepuestoNotFoundException {
         Repuesto repuestoExistente = obtenerRepuestoPorId(id);
         repuestoExistente.setNombre(repuesto.getNombre());
         repuestoExistente.setMarca(repuesto.getMarca());
@@ -88,11 +106,18 @@ public class RepuestoServiceImpl implements RepuestoService {
         repuestoExistente.setPrecio(repuesto.getPrecio());
         repuestoExistente.setStock(repuesto.getStock());
         repuestoRepository.save(repuestoExistente);
+
+        try {
+            sparqlRepository.actualizarRepuesto(repuestoMapper.mapearDeRepuestoADTO(repuestoExistente));
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al actualizar RDF: " + e.getMessage());
+        }
+
         return repuestoExistente;
     }
 
     @Override
-    public Repuesto aumentarStock(Long id, int cantidad) throws RepuestoNotFoundException{
+    public Repuesto aumentarStock(Long id, int cantidad) throws RepuestoNotFoundException {
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
         if (cantidad <= 0) {
@@ -100,41 +125,56 @@ public class RepuestoServiceImpl implements RepuestoService {
         }
         // actualizar el stock.
         repuesto.setStock(repuesto.getStock() + cantidad);
-        //Crear movimiento
+        // Crear movimiento
         crearMovimiento(repuesto, TipoMovimiento.ENTRADA, cantidad);
 
-        //Guardamos el repuesto actualizado en la base de datos.
-        return repuestoRepository.save(repuesto);
+        // Guardamos el repuesto actualizado en la base de datos.
+        Repuesto repuestoGuardado = repuestoRepository.save(repuesto);
+
+        try {
+            sparqlRepository.actualizarRepuesto(repuestoMapper.mapearDeRepuestoADTO(repuestoGuardado));
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al actualizar stock en RDF: " + e.getMessage());
+        }
+
+        return repuestoGuardado;
     }
 
-
     @Override
-    public Repuesto reducirStock(Long id, int cantidad) throws RepuestoNotFoundException{
-        //Buscamos el repuesto.
+    public Repuesto reducirStock(Long id, int cantidad) throws RepuestoNotFoundException {
+        // Buscamos el repuesto.
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
-        //Validamos que la cantidad sea positiva.
+        // Validamos que la cantidad sea positiva.
         if (cantidad <= 0) {
             throw new IllegalArgumentException("La cantidad a reducir debe ser mayor que cero.");
         }
 
-        //Validamos que haya stock suficiente.
+        // Validamos que haya stock suficiente.
         if (repuesto.getStock() < cantidad) {
             throw new IllegalStateException("No hay stock suficiente para el repuesto: " + repuesto.getNombre());
         }
 
-        //Actualizamos el stock.
+        // Actualizamos el stock.
         repuesto.setStock(repuesto.getStock() - cantidad);
 
-        //Creamos movimiento
+        // Creamos movimiento
         crearMovimiento(repuesto, TipoMovimiento.VENTA, cantidad);
 
-        //Guardamos el repuesto actualizado.
-        return repuestoRepository.save(repuesto);
+        // Guardamos el repuesto actualizado.
+        Repuesto repuestoGuardado = repuestoRepository.save(repuesto);
+
+        try {
+            sparqlRepository.actualizarRepuesto(repuestoMapper.mapearDeRepuestoADTO(repuestoGuardado));
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al reducir stock en RDF: " + e.getMessage());
+        }
+
+        return repuestoGuardado;
     }
 
     @Override
-    public Repuesto aumentarStockPorDevolucion(Long id, int cantidad) throws RepuestoNotFoundException{
+    public Repuesto aumentarStockPorDevolucion(Long id, int cantidad) throws RepuestoNotFoundException {
         Repuesto repuesto = obtenerRepuestoPorId(id);
 
         if (cantidad <= 0) {
@@ -142,25 +182,40 @@ public class RepuestoServiceImpl implements RepuestoService {
         }
         // actualizar el stock.
         repuesto.setStock(repuesto.getStock() + cantidad);
-        //Crear movimiento
+        // Crear movimiento
         crearMovimiento(repuesto, TipoMovimiento.DEVOLUCION, cantidad);
 
-        //Guardamos el repuesto actualizado en la base de datos.
-        return repuestoRepository.save(repuesto);
+        // Guardamos el repuesto actualizado en la base de datos.
+        Repuesto repuestoGuardado = repuestoRepository.save(repuesto);
+
+        try {
+            sparqlRepository.actualizarRepuesto(repuestoMapper.mapearDeRepuestoADTO(repuestoGuardado));
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al aumentar stock por devolucion en RDF: " + e.getMessage());
+        }
+
+        return repuestoGuardado;
     }
 
     @Override
     public void eliminarRepuesto(Long id) throws RepuestoNotFoundException {
         Repuesto repuesto = obtenerRepuestoPorId(id);
-        if (repuesto==null){
+        if (repuesto == null) {
             throw new RepuestoNotFoundException("Repuesto no encontrado");
         }
         repuestoRepository.deleteById(id);
+
+        try {
+            sparqlRepository.eliminarRepuesto(id);
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al eliminar en RDF: " + e.getMessage());
+        }
     }
 
     private void crearMovimiento(Repuesto repuesto, TipoMovimiento tipo, Integer cantidad) {
         LocalDate fecha = LocalDate.now();
-        FechaMovimiento fechaMovimiento = new FechaMovimiento(fecha.getDayOfMonth(), fecha.getMonthValue(), fecha.getYear());
+        FechaMovimiento fechaMovimiento = new FechaMovimiento(fecha.getDayOfMonth(), fecha.getMonthValue(),
+                fecha.getYear());
 
         Movimiento movimiento = new Movimiento();
         movimiento.setFechaMovimiento(fechaMovimiento);

@@ -16,9 +16,45 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/semantico")
 public class SemanticController {
-
     @Autowired
     private SparqlRepository sparqlRepository;
+
+    @Autowired
+    private com.venta.repuestos.servicios.RepuestoService repuestoService;
+
+    @Autowired
+    private com.venta.repuestos.servicios.ClienteService clienteService;
+
+    /**
+     * POST /api/semantico/sincronizar
+     * Sincroniza todos los repuestos y clientes desde MySQL hacia el Grafo RDF.
+     */
+    @PostMapping("/sincronizar")
+    public ResponseEntity<String> sincronizarMasivamente() {
+        int repCount = 0;
+        int clienteCount = 0;
+
+        try {
+            List<RepuestoDTO> repuestos = repuestoService.obtenerTodosLosRepuestosDTO();
+            for (RepuestoDTO r : repuestos) {
+                // Usamos actualizar para forzar un UPSERT (borra y re-escribe)
+                sparqlRepository.actualizarRepuesto(r);
+                repCount++;
+            }
+
+            List<com.venta.repuestos.entidades.Cliente> clientes = clienteService.findAll();
+            for (com.venta.repuestos.entidades.Cliente c : clientes) {
+                sparqlRepository.actualizarCliente(c);
+                clienteCount++;
+            }
+
+            return ResponseEntity.ok("Sincronización exitosa. Registros migrados: " + repCount + " repuestos, "
+                    + clienteCount + " clientes.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Error durante la sincronización masiva: " + e.getMessage());
+        }
+    }
 
     /**
      * GET /api/semantico/repuestos

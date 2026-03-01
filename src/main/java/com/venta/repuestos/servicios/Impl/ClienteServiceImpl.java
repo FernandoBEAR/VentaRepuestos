@@ -26,15 +26,24 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public Cliente findById(Long id) throws  ClienteNotFoundException {
+    public Cliente findById(Long id) throws ClienteNotFoundException {
         return clienteRepository.findById(id).orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado"));
     }
+
+    @Autowired
+    private com.venta.repuestos.repositorios.SparqlRepository sparqlRepository;
 
     @Override
     public Cliente save(Cliente cliente) {
         // KISS: permitir que JPA genere el id
         cliente.setId(null);
-        return clienteRepository.save(cliente);
+        Cliente guardado = clienteRepository.save(cliente);
+        try {
+            sparqlRepository.insertarCliente(guardado);
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al insertar cliente en RDF: " + e.getMessage());
+        }
+        return guardado;
     }
 
     @Override
@@ -42,7 +51,13 @@ public class ClienteServiceImpl implements ClienteService {
         return clienteRepository.findById(id).map(existing -> {
             existing.setNombre(cliente.getNombre());
             existing.setEmail(cliente.getEmail());
-            return clienteRepository.save(existing);
+            Cliente actualizado = clienteRepository.save(existing);
+            try {
+                sparqlRepository.actualizarCliente(actualizado);
+            } catch (Exception e) {
+                System.err.println("[SINCRONIZACIÓN] Error al actualizar cliente en RDF: " + e.getMessage());
+            }
+            return actualizado;
         }).orElseThrow(() -> new ClienteNotFoundException("Cliente no encontrado con id: " + id));
     }
 
@@ -52,6 +67,10 @@ public class ClienteServiceImpl implements ClienteService {
             throw new ClienteNotFoundException("Cliente no encontrado con id: " + id);
         }
         clienteRepository.deleteById(id);
+        try {
+            sparqlRepository.eliminarCliente(id);
+        } catch (Exception e) {
+            System.err.println("[SINCRONIZACIÓN] Error al eliminar cliente en RDF: " + e.getMessage());
+        }
     }
 }
-

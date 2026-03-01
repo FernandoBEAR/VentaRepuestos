@@ -109,7 +109,9 @@ public class SparqlRepository {
         String marcaUri = "vr:Marca" + (dto.getMarca() != null
                 ? dto.getMarca().name().charAt(0) + dto.getMarca().name().substring(1).toLowerCase()
                 : "Desconocida");
-        String nodeId = "vr:repuesto_" + System.currentTimeMillis();
+
+        // Anclamos la URI de RDF al identificador Autoincremental de MySQL
+        String nodeId = "vr:repuesto_mysql_" + dto.getId();
 
         String sparql = PREFIXES +
                 "INSERT DATA {\n" +
@@ -131,6 +133,123 @@ public class SparqlRepository {
             return true;
         } catch (Exception e) {
             System.err.println("[SPARQL] Error insertando repuesto: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza un repuesto en el Grafo RDF sobreescribiendo sus datos actuales.
+     */
+    public boolean actualizarRepuesto(RepuestoDTO dto) {
+        String nodeId = "vr:repuesto_mysql_" + dto.getId();
+        String marcaUri = "vr:Marca" + (dto.getMarca() != null
+                ? dto.getMarca().name().charAt(0) + dto.getMarca().name().substring(1).toLowerCase()
+                : "Desconocida");
+
+        // Primero borramos todas las propiedades que apuntan desde ese nodo
+        // y luego reinsertamos las nuevas usando DELETE / INSERT en SPARQL Update
+        String sparql = PREFIXES +
+                "DELETE { " + nodeId + " ?p ?o } \n" +
+                "WHERE  { " + nodeId + " ?p ?o } ;\n" +
+                "INSERT DATA {\n" +
+                "  " + nodeId + " a vr:Repuesto ;\n" +
+                "    schema:name \"" + escapeSparql(dto.getNombre()) + "\" ;\n" +
+                "    vr:precio " + (dto.getPrecio() != null ? dto.getPrecio() : 0.0) + " ;\n" +
+                "    vr:stock " + (dto.getStock() != null ? dto.getStock() : 0) + " ;\n" +
+                (dto.getDescripcion() != null ? "    vr:descripcion \"" + escapeSparql(dto.getDescripcion()) + "\" ;\n"
+                        : "")
+                +
+                "    vr:tieneMarca " + marcaUri + " .\n" +
+                "}";
+
+        try {
+            Txn.executeWrite(dataset, () -> {
+                UpdateProcessor proc = UpdateExecutionFactory.create(UpdateFactory.create(sparql), dataset);
+                proc.execute();
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("[SPARQL] Error actualizando repuesto en RDF: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Elimina completamente un nodo de repuesto del grafo RDF.
+     */
+    public boolean eliminarRepuesto(Long id) {
+        String nodeId = "vr:repuesto_mysql_" + id;
+        String sparql = PREFIXES +
+                "DELETE { " + nodeId + " ?p ?o } \n" +
+                "WHERE  { " + nodeId + " ?p ?o }";
+
+        try {
+            Txn.executeWrite(dataset, () -> {
+                UpdateProcessor proc = UpdateExecutionFactory.create(UpdateFactory.create(sparql), dataset);
+                proc.execute();
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("[SPARQL] Error eliminando repuesto en RDF: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean insertarCliente(com.venta.repuestos.entidades.Cliente dto) {
+        String nodeId = "vr:cliente_mysql_" + dto.getId();
+        String sparql = PREFIXES +
+                "INSERT DATA {\n" +
+                "  " + nodeId + " a vr:Cliente ;\n" +
+                "    foaf:name \"" + escapeSparql(dto.getNombre()) + "\" " +
+                (dto.getEmail() != null ? ";\n    vr:email \"" + escapeSparql(dto.getEmail()) + "\" .\n" : ".\n") +
+                "}";
+        try {
+            Txn.executeWrite(dataset, () -> {
+                UpdateProcessor proc = UpdateExecutionFactory.create(UpdateFactory.create(sparql), dataset);
+                proc.execute();
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("[SPARQL] Error insertando cliente: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean actualizarCliente(com.venta.repuestos.entidades.Cliente dto) {
+        String nodeId = "vr:cliente_mysql_" + dto.getId();
+        String sparql = PREFIXES +
+                "DELETE { " + nodeId + " ?p ?o } \n" +
+                "WHERE  { " + nodeId + " ?p ?o } ;\n" +
+                "INSERT DATA {\n" +
+                "  " + nodeId + " a vr:Cliente ;\n" +
+                "    foaf:name \"" + escapeSparql(dto.getNombre()) + "\" " +
+                (dto.getEmail() != null ? ";\n    vr:email \"" + escapeSparql(dto.getEmail()) + "\" .\n" : ".\n") +
+                "}";
+        try {
+            Txn.executeWrite(dataset, () -> {
+                UpdateProcessor proc = UpdateExecutionFactory.create(UpdateFactory.create(sparql), dataset);
+                proc.execute();
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("[SPARQL] Error actualizando cliente en RDF: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean eliminarCliente(Long id) {
+        String nodeId = "vr:cliente_mysql_" + id;
+        String sparql = PREFIXES +
+                "DELETE { " + nodeId + " ?p ?o } \n" +
+                "WHERE  { " + nodeId + " ?p ?o }";
+        try {
+            Txn.executeWrite(dataset, () -> {
+                UpdateProcessor proc = UpdateExecutionFactory.create(UpdateFactory.create(sparql), dataset);
+                proc.execute();
+            });
+            return true;
+        } catch (Exception e) {
+            System.err.println("[SPARQL] Error eliminando cliente en RDF: " + e.getMessage());
             return false;
         }
     }
