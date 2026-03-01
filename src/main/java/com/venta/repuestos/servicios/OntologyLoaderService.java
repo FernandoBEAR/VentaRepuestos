@@ -12,6 +12,7 @@ import org.apache.jena.vocabulary.RDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -113,9 +114,11 @@ public class OntologyLoaderService {
 
     /**
      * Se ejecuta automáticamente al arrancar Spring Boot.
-     * Carga todas las entidades de la BD en el grafo RDF.
+     * @Transactional mantiene la sesión JPA abierta durante toda la carga,
+     * evitando LazyInitializationException en colecciones lazy (detalles, pago).
      */
     @PostConstruct
+    @Transactional(readOnly = true)
     public void cargarDesdeBD() {
         log.info("[RDF] Iniciando carga dinámica desde la base de datos...");
         limpiarInstancias();
@@ -127,6 +130,7 @@ public class OntologyLoaderService {
      * Método público para recargar el grafo RDF desde la BD.
      * Llamar después de operaciones CRUD para mantener el grafo sincronizado.
      */
+    @Transactional(readOnly = true)
     public void recargar() {
         log.info("[RDF] Recarga manual solicitada...");
         limpiarInstancias();
@@ -232,7 +236,9 @@ public class OntologyLoaderService {
     // ── Ventas + DetalleVenta ──────────────────────────────────────────────
 
     private void poblarVentas() {
-        List<Venta> lista = ventaRepository.findAll();
+        // JOIN FETCH precarga detalles, repuesto por detalle, pago y cliente
+        // en una sola query para evitar LazyInitializationException
+        List<Venta> lista = ventaRepository.findAllWithDetallesAndPago();
         log.info("[RDF] Insertando {} venta(s) con sus detalles...", lista.size());
 
         Txn.executeWrite(dataset, () -> {
