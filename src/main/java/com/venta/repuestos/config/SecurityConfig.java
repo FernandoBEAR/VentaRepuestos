@@ -26,176 +26,172 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private JwtUtils jwtUtils;
+        @Autowired
+        private JwtUtils jwtUtils;
 
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authProvider)
+                        throws Exception {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authProvider) throws Exception {
+                return http
+                                // Deshabilitamos CSRF ya que usamos JWT (stateless)
+                                .csrf(csrf -> csrf.disable())
+                                .httpBasic(Customizer.withDefaults())
+                                // Configuración stateless para JWT (sin sesiones del lado del servidor)
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-        return http
-                // Deshabilitamos CSRF ya que usamos JWT (stateless)
-                .csrf(csrf -> csrf.disable())
-                .httpBasic(Customizer.withDefaults())
-                // Configuración stateless para JWT (sin sesiones del lado del servidor)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> {
 
-                .authorizeHttpRequests(auth -> {
+                                        // ENDPOINTS PÚBLICOS - Sin autenticación requerida
 
+                                        auth.requestMatchers(HttpMethod.POST, "/auth/**").permitAll();
+                                        auth.requestMatchers(HttpMethod.GET, "/auth/**").permitAll();
 
-                      // ENDPOINTS PÚBLICOS - Sin autenticación requerida
+                                        // ENDPOINTS SEMÁNTICOS (Web Semántica / SPARQL) - Acceso público
+                                        auth.requestMatchers("/api/semantico/**").permitAll();
 
-                    auth.requestMatchers(HttpMethod.POST, "/auth/**").permitAll();
-                    auth.requestMatchers(HttpMethod.GET, "/auth/**").permitAll();
+                                        // GESTIÓN DE USUARIOS - Solo ADMIN
+                                        // Principio: El administrador tiene control total sobre usuarios
 
+                                        auth.requestMatchers(HttpMethod.GET, "/api/users/**")
+                                                        .hasAnyRole("ADMIN");
+                                        auth.requestMatchers(HttpMethod.POST, "/api/users/**")
+                                                        .hasAnyRole("ADMIN");
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/users/**")
+                                                        .hasAnyRole("ADMIN");
+                                        auth.requestMatchers(HttpMethod.DELETE, "/api/users/**")
+                                                        .hasAnyRole("ADMIN");
 
-//                       GESTIÓN DE USUARIOS - Solo ADMIN
-//                       Principio: El administrador tiene control total sobre usuarios
+                                        // CLIENTES
+                                        // - ADMIN: CRUD completo
+                                        // - VENDEDOR: Crear y actualizar (necesario para registrar ventas)
 
-                    auth.requestMatchers(HttpMethod.GET, "/api/users/**")
-                            .hasAnyRole("ADMIN");
-                    auth.requestMatchers(HttpMethod.POST, "/api/users/**")
-                            .hasAnyRole("ADMIN");
-                    auth.requestMatchers(HttpMethod.PUT, "/api/users/**")
-                            .hasAnyRole("ADMIN");
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/users/**")
-                            .hasAnyRole("ADMIN");
+                                        // Lectura: ADMIN puede leer cualquier cliente
+                                        auth.requestMatchers(HttpMethod.GET, "/api/v1/clientes/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
+                                        // Creación: ADMIN y VENDEDOR pueden crear clientes
+                                        auth.requestMatchers(HttpMethod.POST, "/api/v1/clientes/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-//                       CLIENTES
-//                       - ADMIN: CRUD completo
-//                       - VENDEDOR: Crear y actualizar (necesario para registrar ventas)
+                                        // Actualización: ADMIN y VENDEDOR pueden actualizar clientes
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/v1/clientes/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    // Lectura: ADMIN puede leer cualquier cliente
-                    auth.requestMatchers(HttpMethod.GET, "/api/v1/clientes/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        // Eliminación: Solo ADMIN puede eliminar clientes
+                                        auth.requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**")
+                                                        .hasRole("ADMIN");
 
-                    // Creación: ADMIN y VENDEDOR pueden crear clientes
-                    auth.requestMatchers(HttpMethod.POST, "/api/v1/clientes/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        // REPUESTOS
+                                        // - ADMIN: CRUD completo
+                                        // - LOGISTICA: Crear, editar, controlar stock, leer
+                                        // - VENDEDOR: Solo lectura (para consultar disponibilidad)
 
-                    // Actualización: ADMIN y VENDEDOR pueden actualizar clientes
-                    auth.requestMatchers(HttpMethod.PUT, "/api/v1/clientes/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        // Lectura: Todos los roles pueden consultar repuestos
+                                        auth.requestMatchers(HttpMethod.GET, "/api/repuestos/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR", "LOGISTICA");
 
-                    // Eliminación: Solo ADMIN puede eliminar clientes
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**")
-                            .hasRole("ADMIN");
+                                        // Creación: Solo ADMIN y LOGISTICA pueden crear repuestos
+                                        auth.requestMatchers(HttpMethod.POST, "/api/repuestos/**")
+                                                        .hasAnyRole("ADMIN", "LOGISTICA");
 
+                                        // Actualización general: ADMIN y LOGISTICA
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/repuestos/**")
+                                                        .hasAnyRole("ADMIN", "LOGISTICA");
 
-//                       REPUESTOS
-//                       - ADMIN: CRUD completo
-//                       - LOGISTICA: Crear, editar, controlar stock, leer
-//                       - VENDEDOR: Solo lectura (para consultar disponibilidad)
+                                        // Control de stock manual: ADMIN y LOGISTICA
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/repuestos/*/aumentar-stock/*")
+                                                        .hasAnyRole("ADMIN", "LOGISTICA");
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/repuestos/*/reducir-stock/*")
+                                                        .hasAnyRole("ADMIN", "LOGISTICA");
 
-                    // Lectura: Todos los roles pueden consultar repuestos
-                    auth.requestMatchers(HttpMethod.GET, "/api/repuestos/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR", "LOGISTICA");
+                                        // Eliminación: Solo ADMIN puede eliminar repuestos
+                                        auth.requestMatchers(HttpMethod.DELETE, "/api/repuestos/**")
+                                                        .hasRole("ADMIN");
 
-                    // Creación: Solo ADMIN y LOGISTICA pueden crear repuestos
-                    auth.requestMatchers(HttpMethod.POST, "/api/repuestos/**")
-                            .hasAnyRole("ADMIN", "LOGISTICA");
+                                        // VENTAS
+                                        // - ADMIN: CRUD completo (gestión total de ventas)
+                                        // - VENDEDOR: Crear y leer ventas
 
-                    // Actualización general: ADMIN y LOGISTICA
-                    auth.requestMatchers(HttpMethod.PUT, "/api/repuestos/**")
-                            .hasAnyRole("ADMIN", "LOGISTICA");
+                                        // Lectura: ADMIN y VENDEDOR pueden ver ventas
+                                        auth.requestMatchers(HttpMethod.GET, "/api/ventas/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    // Control de stock manual: ADMIN y LOGISTICA
-                    auth.requestMatchers(HttpMethod.PUT, "/api/repuestos/*/aumentar-stock/*")
-                            .hasAnyRole("ADMIN", "LOGISTICA");
-                    auth.requestMatchers(HttpMethod.PUT, "/api/repuestos/*/reducir-stock/*")
-                            .hasAnyRole("ADMIN", "LOGISTICA");
+                                        // Creación: ADMIN y VENDEDOR pueden crear ventas
+                                        auth.requestMatchers(HttpMethod.POST, "/api/ventas/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    // Eliminación: Solo ADMIN puede eliminar repuestos
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/repuestos/**")
-                            .hasRole("ADMIN");
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/ventas/*/entregar-productos")
+                                                        .hasAnyRole("ADMIN", "LOGISTICA");
+                                        // Actualización: Solo ADMIN puede modificar ventas existentes
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/ventas/**")
+                                                        .hasRole("ADMIN");
 
+                                        // Eliminación/Anulación: Solo ADMIN puede anular ventas
+                                        auth.requestMatchers(HttpMethod.DELETE, "/api/ventas/**")
+                                                        .hasRole("ADMIN");
 
-//                       VENTAS
-//                       - ADMIN: CRUD completo (gestión total de ventas)
-//                       - VENDEDOR: Crear y leer ventas
+                                        // DETALLE DE VENTAS
+                                        // - ADMIN: CRUD completo
+                                        // - VENDEDOR: Crear y leer detalles (asociados a sus ventas)
 
-                    // Lectura: ADMIN y VENDEDOR pueden ver ventas
-                    auth.requestMatchers(HttpMethod.GET, "/api/ventas/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        auth.requestMatchers(HttpMethod.GET, "/api/detalles-venta/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    // Creación: ADMIN y VENDEDOR pueden crear ventas
-                    auth.requestMatchers(HttpMethod.POST, "/api/ventas/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        auth.requestMatchers(HttpMethod.POST, "/api/detalles-venta/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    auth.requestMatchers(HttpMethod.PUT, "/api/ventas/*/entregar-productos")
-                            .hasAnyRole("ADMIN", "LOGISTICA");
-                    // Actualización: Solo ADMIN puede modificar ventas existentes
-                    auth.requestMatchers(HttpMethod.PUT, "/api/ventas/**")
-                            .hasRole("ADMIN");
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/detalles-venta/**")
+                                                        .hasRole("ADMIN");
 
-                    // Eliminación/Anulación: Solo ADMIN puede anular ventas
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/ventas/**")
-                            .hasRole("ADMIN");
+                                        auth.requestMatchers(HttpMethod.DELETE, "/api/detalles-venta/**")
+                                                        .hasRole("ADMIN");
 
+                                        // PAGOS
+                                        // - ADMIN: CRUD completo
+                                        // - VENDEDOR: Crear y leer pagos
 
-//                       DETALLE DE VENTAS
-//                       - ADMIN: CRUD completo
-//                       - VENDEDOR: Crear y leer detalles (asociados a sus ventas)
+                                        // Lectura: ADMIN y VENDEDOR pueden ver pagos
+                                        auth.requestMatchers(HttpMethod.GET, "/api/v1/pagos/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    auth.requestMatchers(HttpMethod.GET, "/api/detalles-venta/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        // Creación: ADMIN y VENDEDOR pueden registrar pagos
+                                        auth.requestMatchers(HttpMethod.POST, "/api/v1/pagos/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    auth.requestMatchers(HttpMethod.POST, "/api/detalles-venta/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
+                                        // Actualización: Solo ADMIN puede modificar pagos
+                                        auth.requestMatchers(HttpMethod.PUT, "/api/v1/pagos/**")
+                                                        .hasAnyRole("ADMIN", "VENDEDOR");
 
-                    auth.requestMatchers(HttpMethod.PUT, "/api/detalles-venta/**")
-                            .hasRole("ADMIN");
+                                        // Eliminación: Solo ADMIN puede eliminar pagos
+                                        auth.requestMatchers(HttpMethod.DELETE, "/api/v1/pagos/**")
+                                                        .hasRole("ADMIN");
 
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/detalles-venta/**")
-                            .hasRole("ADMIN");
+                                        auth.anyRequest().denyAll();
+                                })
 
+                                .authenticationProvider(authProvider)
+                                .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
+                                .build();
+        }
 
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+                        throws Exception {
+                return authenticationConfiguration.getAuthenticationManager();
+        }
 
-//                       PAGOS
-//                       - ADMIN: CRUD completo
-//                       - VENDEDOR: Crear y leer pagos
+        @Bean
+        public AuthenticationProvider authenticationProvider(UserDetailServiceImp userDetailServiceImp) {
+                DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailServiceImp);
+                provider.setPasswordEncoder(passwordEncoder());
+                return provider;
+        }
 
-                    // Lectura: ADMIN y VENDEDOR pueden ver pagos
-                    auth.requestMatchers(HttpMethod.GET, "/api/v1/pagos/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
-
-                    // Creación: ADMIN y VENDEDOR pueden registrar pagos
-                    auth.requestMatchers(HttpMethod.POST, "/api/v1/pagos/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
-
-                    // Actualización: Solo ADMIN puede modificar pagos
-                    auth.requestMatchers(HttpMethod.PUT, "/api/v1/pagos/**")
-                            .hasAnyRole("ADMIN", "VENDEDOR");
-
-                    // Eliminación: Solo ADMIN puede eliminar pagos
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/v1/pagos/**")
-                            .hasRole("ADMIN");
-
-
-                    auth.anyRequest().denyAll();
-                })
-
-                .authenticationProvider(authProvider)
-                .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
-                .build();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailServiceImp userDetailServiceImp) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailServiceImp);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
 }

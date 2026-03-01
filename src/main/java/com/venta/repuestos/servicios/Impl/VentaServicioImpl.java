@@ -2,6 +2,7 @@ package com.venta.repuestos.servicios.Impl;
 
 import com.venta.repuestos.dtos.EntregarProductosResponse;
 import com.venta.repuestos.entidades.DetalleVenta;
+import com.venta.repuestos.entidades.Pago;
 import com.venta.repuestos.entidades.Repuesto;
 import com.venta.repuestos.entidades.Venta;
 import com.venta.repuestos.enums.EstadoPago;
@@ -60,6 +61,16 @@ public class VentaServicioImpl implements VentaService {
             venta.getPago().setEstadoPago(EstadoPago.POR_PAGAR);
             venta.getPago().setFecha(LocalDate.now());
             venta.getPago().setTipoComprobante(TipoComprobante.BOLETA);
+
+//           Pago pago = new Pago();
+//           pago.setMonto(total);
+//           pago.setEstadoPago(EstadoPago.POR_PAGAR);
+//           pago.setFecha(LocalDate.now());
+//           pago.setTipoComprobante(TipoComprobante.BOLETA);
+//
+//           pago.setVenta(venta);
+//           venta.setPago(pago);
+
         }
         return ventaRepository.save(venta);
     }
