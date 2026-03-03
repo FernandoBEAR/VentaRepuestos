@@ -326,6 +326,72 @@ public class SparqlRepository {
     }
 
     // =========================================================================
+    // CONSULTA MULTI-SALTO SEMÁNTICA
+    // =========================================================================
+
+    /**
+     * Consulta multi-salto: "Dame todos los repuestos de una marca X,
+     * vendidos a clientes que pagaron con un metodo".
+     *
+     * Recorrido del grafo (4 saltos):
+     *   Repuesto <--[detalleRepuesto]-- DetalleVenta
+     *   DetalleVenta <--[tieneDetalle]-- Venta
+     *   Venta --[tieneCliente]--> Cliente
+     *   Venta --[tienePago]--> Pago --[tieneMetodoPago]--> ConceptoSKOS (prefLabel = metodo
+     *
+     * @param marca      Marca exacta (BOSCH, STANLEY, TRUPPER). Null = todas.
+     * @param metodoPago Metodo de pago Efectivo, tarjeta , etc
+     */
+    public List<Map<String, String>> buscarRepuestosVendidosPorMarcaYMetodoPago(String marca, String metodoPago) {
+        ParameterizedSparqlString pss = new ParameterizedSparqlString();
+
+        StringBuilder filtros = new StringBuilder();
+        if (marca != null && !marca.isBlank()) {
+            filtros.append("  FILTER(UCASE(STR(?marcaLabel)) = UCASE(?filtroMarca))\n");
+        }
+        if (metodoPago != null && !metodoPago.isBlank()) {
+            filtros.append("  FILTER(UCASE(STR(?metodoPagoLabel)) = UCASE(?filtroMetodo))\n");
+        }
+
+        pss.setCommandText(PREFIXES +
+                "SELECT DISTINCT ?repuestoNombre ?marcaLabel ?precio ?stock\n" +
+                "                ?clienteNombre ?metodoPagoLabel ?ventaId ?subtotal\n" +
+                "WHERE {\n" +
+                // Salto 1: Repuesto con nombre y precio
+                "  ?rep a vr:Repuesto ;\n" +
+                "       schema:name ?repuestoNombre ;\n" +
+                "       vr:precio ?precio .\n" +
+                "  OPTIONAL { ?rep vr:stock ?stock }\n" +
+                // Salto 2: Repuesto → tieneMarca → ConceptoSKOS
+                "  ?rep vr:tieneMarca ?marca .\n" +
+                "  ?marca skos:prefLabel ?marcaLabel .\n" +
+                // Salto 3: DetalleVenta → detalleRepuesto → Repuesto
+                "  ?detalle vr:detalleRepuesto ?rep .\n" +
+                "  OPTIONAL { ?detalle vr:subtotal ?subtotal }\n" +
+                // Salto 4: Venta → tieneDetalle → DetalleVenta
+                "  ?venta vr:tieneDetalle ?detalle .\n" +
+                "  BIND(STRAFTER(STR(?venta), \"ontology#venta_\") AS ?ventaId)\n" +
+                // Salto 5a: Venta → tieneCliente → Cliente
+                "  ?venta vr:tieneCliente ?cli .\n" +
+                "  ?cli foaf:name ?clienteNombre .\n" +
+                // Salto 5b: Venta → tienePago → Pago → tieneMetodoPago → ConceptoSKOS
+                "  ?venta vr:tienePago ?pago .\n" +
+                "  ?pago vr:tieneMetodoPago ?metodo .\n" +
+                "  ?metodo skos:prefLabel ?metodoPagoLabel .\n" +
+                filtros +
+                "} ORDER BY ?repuestoNombre ?clienteNombre");
+
+        if (marca != null && !marca.isBlank()) {
+            pss.setLiteral("filtroMarca", marca.toUpperCase());
+        }
+        if (metodoPago != null && !metodoPago.isBlank()) {
+            pss.setLiteral("filtroMetodo", metodoPago.toUpperCase());
+        }
+
+        return ejecutarConsultaLibre(pss.toString());
+    }
+
+    // =========================================================================
     // CONSULTA LIBRE
     // =========================================================================
 

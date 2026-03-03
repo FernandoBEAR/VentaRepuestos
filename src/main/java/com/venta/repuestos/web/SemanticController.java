@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -211,6 +212,65 @@ public class SemanticController {
         if (resultado.isEmpty())
             return ResponseEntity.notFound().build();
         return ResponseEntity.ok(resultado);
+    }
+
+    // =========================================================================
+    // CONSULTA POR LENGUAJE NATURAL
+    // =========================================================================
+
+    /**
+     * POST /api/semantico/consulta/natural
+     *
+     * Interpreta un mensaje en texto libre y ejecuta la consulta SPARQL
+     * correspondiente en el grafo RDF.
+     *
+     * Body: { "mensaje": "Listame todos los repuestos de la marca BOSCH" }
+     *
+     * Ejemplos de mensajes:
+     *   "Dame los productos de STANLEY pagados con efectivo"
+     *   "Muestra los repuestos de TRUPPER con tarjeta de crédito"
+     *   "Quiero ver las ventas"
+     *   "Muestra los clientes"
+     */
+    @PostMapping("/consulta/natural")
+    public ResponseEntity<Map<String, Object>> consultaNatural(@RequestBody Map<String, String> body) {
+        String mensaje = body.get("mensaje");
+        if (mensaje == null || mensaje.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error",   "El campo 'mensaje' es obligatorio.",
+                    "ejemplo", "{ \"mensaje\": \"Listame los repuestos de BOSCH\" }"));
+        }
+
+        // 1. Parsear intención y parámetros del mensaje
+        Map<String, String> parametros = NaturalLanguageQueryParser.parsear(mensaje);
+        String entidad    = parametros.get("entidad");
+        String marca      = parametros.get("marca");
+        String metodoPago = parametros.get("metodoPago");
+
+        // 2. Ejecutar consulta SPARQL según entidad detectada
+        List<Map<String, String>> datos = switch (entidad) {
+            case "REPUESTO"    -> sparqlRepository.buscarRepuestosVendidosPorMarcaYMetodoPago(marca, metodoPago);
+            case "CLIENTE"     -> sparqlRepository.buscarClientes();
+            case "VENTA"       -> sparqlRepository.buscarVentas();
+            case "PAGO"        -> sparqlRepository.buscarPagos();
+            case "MOVIMIENTO"  -> sparqlRepository.buscarMovimientos();
+            default            -> sparqlRepository.buscarRepuestosVendidosPorMarcaYMetodoPago(marca, metodoPago);
+        };
+
+        // 3. Construir respuesta con contexto para que el cliente vea la interpretación
+        Map<String, Object> respuesta = new LinkedHashMap<>();
+        respuesta.put("mensajeRecibido",      mensaje);
+        respuesta.put("parametrosDetectados", parametros);
+        respuesta.put("totalResultados",      datos.size());
+
+        if (datos.isEmpty()) {
+            respuesta.put("info",       "No se encontraron resultados para los filtros detectados.");
+            respuesta.put("resultados", List.of());
+        } else {
+            respuesta.put("resultados", datos);
+        }
+
+        return ResponseEntity.ok(respuesta);
     }
 
     // =========================================================================
